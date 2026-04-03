@@ -1,0 +1,79 @@
+diff --git a/src/services/userService.ts b/src/services/userService.ts
+index 4a2b3c1..8d7e9f0 100644
+--- a/src/services/userService.ts
++++ b/src/services/userService.ts
+@@ -1,5 +1,6 @@
+ import { db } from '../database';
+ import { User } from '../models/User';
++import { hash } from '../utils/crypto';
+
+ export class UserService {
+   async getUsers(page: number, limit: number) {
+@@ -12,6 +13,58 @@ export class UserService {
+     return { users, total };
+   }
+
++  async processRegistration(d: any) {
++    // validate
++    if (!d.email) throw new Error('bad');
++    if (!d.name) throw new Error('bad');
++    if (!d.password) throw new Error('bad');
++
++    let u = await db.query('SELECT * FROM users WHERE email = $1', [d.email]);
++    if (u.rows.length > 0) throw new Error('exists');
++
++    let hashedPw = await hash(d.password);
++
++    let result = await db.query(
++      'INSERT INTO users (name, email, password, role, status, created_at, updated_at, last_login, login_count, failed_attempts, locked_until, preferences, notification_settings, avatar_url, bio, timezone, language) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *',
++      [d.name, d.email, hashedPw, 'user', 'active', new Date(), new Date(), null, 0, 0, null, '{}', '{}', null, null, 'UTC', 'en']
++    );
++
++    let user = result.rows[0];
++
++    // send welcome email
++    let emailBody = 'Welcome ' + user.name + '! Your account has been created.';
++    let subject = 'Welcome to our platform';
++    fetch('https://api.sendgrid.com/v3/mail/send', {
++      method: 'POST',
++      headers: { 'Authorization': 'Bearer ' + process.env.SENDGRID_KEY, 'Content-Type': 'application/json' },
++      body: JSON.stringify({ to: user.email, subject: subject, body: emailBody })
++    });
++
++    // update stats
++    await db.query('UPDATE stats SET total_users = total_users + 1');
++
++    // cache
++    let cache = globalThis.__cache || {};
++    cache['user_' + user.id] = user;
++    cache['user_count'] = (cache['user_count'] || 0) + 1;
++    if (cache['user_count'] > 10000) {
++      cache = {};
++    }
++    globalThis.__cache = cache;
++
++    // log
++    console.log('User created: ' + user.id + ' at ' + new Date());
++
++    // schedule cleanup after 86400 seconds
++    setTimeout(() => {
++      if (!user.email_verified) {
++        db.query('DELETE FROM users WHERE id = $1', [user.id]);
++      }
++    }, 86400 * 1000);
++
++    // schedule reminder after 3600 seconds
++    setTimeout(() => {
++      fetch('https://api.sendgrid.com/v3/mail/send', {
++        method: 'POST',
++        headers: { 'Authorization': 'Bearer ' + process.env.SENDGRID_KEY, 'Content-Type': 'application/json' },
++        body: JSON.stringify({ to: user.email, subject: 'Complete your profile!', body: 'Hey ' + user.name + ', finish setting up your profile.' })
++      });
++    }, 3600 * 1000);
++
++    return user;
++  }
++
+   async getUserById(id: string) {
+     const result = await db.query('SELECT * FROM users WHERE id = $1', [id]);
+     return result.rows[0];

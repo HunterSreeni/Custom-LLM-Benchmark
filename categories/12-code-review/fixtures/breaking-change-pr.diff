@@ -1,0 +1,108 @@
+diff --git a/src/utils/formatters.ts b/src/utils/formatters.ts
+index 1a2b3c4..5d6e7f8 100644
+--- a/src/utils/formatters.ts
++++ b/src/utils/formatters.ts
+@@ -1,30 +1,35 @@
+-/**
+- * Format a currency value for display.
+- * @param amount - The numeric amount
+- * @param currency - Currency code (e.g., 'USD', 'EUR')
+- * @param locale - Locale string (e.g., 'en-US')
+- * @returns Formatted currency string
+- */
+-export function formatCurrency(
+-  amount: number,
+-  currency: string = 'USD',
+-  locale: string = 'en-US'
+-): string {
++export interface FormatCurrencyOptions {
++  currency?: string;
++  locale?: string;
++  minimumFractionDigits?: number;
++  maximumFractionDigits?: number;
++  showSymbol?: boolean;
++}
++
++/**
++ * Format a currency value for display.
++ * @param amount - The numeric amount
++ * @param options - Formatting options
++ * @returns Formatted currency string
++ */
++export function formatCurrency(
++  amount: number,
++  options: FormatCurrencyOptions = {}
++): string {
++  const {
++    currency = 'USD',
++    locale = 'en-US',
++    minimumFractionDigits = 2,
++    maximumFractionDigits = 2,
++    showSymbol = true,
++  } = options;
++
+   return new Intl.NumberFormat(locale, {
+-    style: 'currency',
++    style: showSymbol ? 'currency' : 'decimal',
+     currency,
+-    minimumFractionDigits: 2,
+-    maximumFractionDigits: 2,
++    minimumFractionDigits,
++    maximumFractionDigits,
+   }).format(amount);
+ }
+
+-/**
+- * Format a date for display.
+- * @param date - Date object or ISO string
+- * @param format - 'short', 'medium', 'long'
+- * @param locale - Locale string
+- */
+-export function formatDate(
+-  date: Date | string,
+-  format: 'short' | 'medium' | 'long' = 'medium',
+-  locale: string = 'en-US'
+-): string {
++export interface FormatDateOptions {
++  format?: 'short' | 'medium' | 'long' | 'relative';
++  locale?: string;
++  timezone?: string;
++}
++
++export function formatDate(
++  date: Date | string,
++  options: FormatDateOptions = {}
++): string {
++  const {
++    format = 'medium',
++    locale = 'en-US',
++    timezone,
++  } = options;
++
+   const dateObj = typeof date === 'string' ? new Date(date) : date;
+
++  if (format === 'relative') {
++    return getRelativeTime(dateObj);
++  }
++
+   const formatOptions: Intl.DateTimeFormatOptions = {
++    timeZone: timezone,
+     short: { month: 'numeric', day: 'numeric', year: '2-digit' },
+     medium: { month: 'short', day: 'numeric', year: 'numeric' },
+     long: { month: 'long', day: 'numeric', year: 'numeric', weekday: 'long' },
+   }[format];
+
+   return new Intl.DateTimeFormat(locale, formatOptions).format(dateObj);
+ }
++
++function getRelativeTime(date: Date): string {
++  const now = new Date();
++  const diffMs = now.getTime() - date.getTime();
++  const diffMins = Math.floor(diffMs / 60000);
++  if (diffMins < 1) return 'just now';
++  if (diffMins < 60) return `${diffMins}m ago`;
++  const diffHours = Math.floor(diffMins / 60);
++  if (diffHours < 24) return `${diffHours}h ago`;
++  const diffDays = Math.floor(diffHours / 24);
++  return `${diffDays}d ago`;
++}

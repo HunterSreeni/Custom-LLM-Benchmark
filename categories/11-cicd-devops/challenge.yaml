@@ -1,0 +1,738 @@
+category:
+  id: 11
+  name: "CI/CD, DevOps & Infrastructure Security"
+  slug: "cicd-devops"
+  type: "3-phase"
+  tech_stack: ["GitHub Actions", "Docker", "Cloudflare Workers", "Nginx", "AWS IAM", "CORS", "Kubernetes"]
+
+phases:
+  - id: "phase-a"
+    name: "CI/CD & DevOps"
+    challenges:
+      - id: "cat11a-easy"
+        difficulty: "easy"
+        title: "GitHub Actions CI Workflow"
+        description: "Write a CI workflow for a Node.js application"
+        prompt: |
+          Write a GitHub Actions CI workflow for a Node.js application that:
+          1. Triggers on push to main and on pull requests
+          2. Runs lint, test, and build steps in order
+          3. Uses Node.js 20
+          4. Caches node_modules for faster runs
+          5. Fails fast if any step fails
+
+          Output the complete .github/workflows/ci.yml file.
+        source_files: []
+        expected_findings:
+          - id: "valid-workflow"
+            description: "Produces a valid GitHub Actions workflow with correct structure"
+            required: true
+            points: 5
+          - id: "correct-triggers"
+            description: "Has push to main and pull_request triggers"
+            required: true
+            points: 5
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Correct trigger events"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["push", "main", "pull_request", "on:"]
+            - name: "Node.js setup with version 20"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["setup-node", "node-version", "20"]
+            - name: "Lint, test, build steps in correct order"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["lint", "test", "build", "run:"]
+            - name: "Dependency caching"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["cache", "node_modules", "pnpm-lock", "package-lock", "actions/cache"]
+            - name: "Proper YAML structure"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["jobs:", "steps:", "runs-on:", "ubuntu"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Uses non-existent GitHub Actions or incorrect YAML syntax"
+            - flag: "-I"
+              condition: "Missing one or more of the 5 requirements"
+
+      - id: "cat11a-medium"
+        difficulty: "medium"
+        title: "Multi-Stage Dockerfile"
+        description: "Write a production-ready multi-stage Dockerfile"
+        prompt: |
+          Write a multi-stage Dockerfile for a Node.js application with:
+          1. A builder stage for installing dependencies and building
+          2. A production stage with minimal image size
+          3. Layer caching optimization (copy package files before source)
+          4. Non-root user in the production stage
+          5. No secrets or sensitive data in any layer
+          6. Health check configuration
+
+          The app uses pnpm as the package manager and listens on port 3000.
+        source_files: []
+        expected_findings:
+          - id: "multi-stage"
+            description: "Uses multi-stage build with builder and production stages"
+            required: true
+            points: 5
+          - id: "security-practices"
+            description: "Non-root user, no secrets, minimal image"
+            required: true
+            points: 5
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Multi-stage build with FROM ... AS"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["FROM", "AS builder", "AS production", "multi-stage", "COPY --from"]
+            - name: "Layer caching optimization"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["COPY package", "pnpm-lock", "install", "COPY ."]
+            - name: "Non-root user"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["USER", "adduser", "addgroup", "non-root", "appuser", "node"]
+            - name: "Health check"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["HEALTHCHECK", "health", "wget", "curl"]
+            - name: "Alpine or slim base for small image"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["alpine", "slim", "distroless", "minimal"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Includes secrets or passwords in Dockerfile layers"
+            - flag: "-I"
+              condition: "Single-stage build instead of multi-stage"
+
+      - id: "cat11a-hard"
+        difficulty: "hard"
+        title: "Debug Failing CI Pipeline"
+        description: "Diagnose cryptic CI failure from logs"
+        prompt: |
+          Review the following CI pipeline logs (from fixtures/phase-a/ci-logs.txt) and:
+          1. Identify ALL issues causing the pipeline to fail
+          2. Explain the root cause of each failure
+          3. Provide specific fixes for each issue
+          4. Suggest improvements to prevent these failures in the future
+        source_files:
+          - "fixtures/phase-a/ci-logs.txt"
+        expected_findings:
+          - id: "type-error"
+            description: "Identifies the TypeScript type error with setTimeout return type"
+            required: true
+            points: 5
+          - id: "peer-dep-conflict"
+            description: "Identifies the React 19 vs @tanstack/react-query peer dependency conflict"
+            required: true
+            points: 5
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies setTimeout type mismatch"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["setTimeout", "ReturnType", "number", "NodeJS.Timeout", "window.setTimeout", "ws-client"]
+            - name: "Identifies peer dependency conflict"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["peer", "react@19", "react@18", "@tanstack/react-query", "ERESOLVE", "conflicting"]
+            - name: "Provides correct fixes"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["window.setTimeout", "as unknown as number", "overrides", "peerDependencies", "upgrade"]
+            - name: "Suggests preventive measures"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["lockfile", "renovate", "dependabot", "CI check", "type-check", "pre-commit"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims errors that are not present in the logs"
+            - flag: "-I"
+              condition: "Only addresses one of the two failures"
+
+      - id: "cat11a-difficult"
+        difficulty: "difficult"
+        title: "Cloudflare Worker with KV and Cron"
+        description: "Write a Cloudflare Worker with KV storage and cron trigger"
+        prompt: |
+          Write a Cloudflare Worker that:
+          1. Serves as an API rate limiter using KV for tracking request counts
+          2. Has a cron trigger that runs every 5 minutes to clean up expired entries
+          3. Returns 429 Too Many Requests when limit is exceeded
+          4. Include the wrangler.toml configuration
+
+          Reference the partial config in fixtures/phase-a/wrangler-toml.txt for context.
+
+          Also review that wrangler.toml file for any security issues you notice.
+        source_files:
+          - "fixtures/phase-a/wrangler-toml.txt"
+        expected_findings:
+          - id: "worker-implementation"
+            description: "Provides a working Worker with KV-based rate limiting"
+            required: true
+            points: 5
+          - id: "spots-secret-in-config"
+            description: "Identifies the API_SECRET exposed in plain text in wrangler.toml [vars]"
+            required: true
+            points: 5
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "KV-based rate limiting logic"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["KV", "get", "put", "rate limit", "counter", "increment"]
+            - name: "Cron trigger handler"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["scheduled", "cron", "trigger", "cleanup", "expired"]
+            - name: "429 response for rate exceeded"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["429", "Too Many Requests", "rate limit exceeded"]
+            - name: "Correct wrangler.toml structure"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["kv_namespaces", "triggers", "crons", "binding"]
+            - name: "Identifies API_SECRET exposed in [vars]"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["API_SECRET", "secret", "plain text", "vars", "wrangler secret", "environment variable"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Uses non-existent Cloudflare Worker APIs"
+            - flag: "-I"
+              condition: "Does not review the wrangler.toml for security issues"
+
+      - id: "cat11a-hidden"
+        difficulty: "hidden"
+        title: "Secret Exposed in Wrangler Config"
+        description: "Hidden bug - API secret in plain text in wrangler.toml [vars] section"
+        prompt: |
+          Write a Cloudflare Worker deployment pipeline that uses the provided
+          wrangler.toml (fixtures/phase-a/wrangler-toml.txt). Set up the deployment
+          with proper environment management for staging and production.
+        source_files:
+          - "fixtures/phase-a/wrangler-toml.txt"
+        expected_findings:
+          - id: "secret-in-vars"
+            description: "Identifies API_SECRET = 'sk-prod-abc123def456ghi789' exposed in [vars] section"
+            required: true
+            points: 10
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies the secret in [vars] section"
+              points: 5
+              match_type: "keyword"
+              match_terms: ["API_SECRET", "sk-prod", "secret", "[vars]", "plain text", "exposed"]
+            - name: "Recommends using wrangler secret or encrypted storage"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["wrangler secret", "secret put", "encrypted", "environment variable", ".dev.vars"]
+            - name: "Explains the risk"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["version control", "git", "committed", "repository", "leaked", "exposed"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims security issues that don't exist in the config"
+            - flag: "-I"
+              condition: "Does not review the wrangler.toml for security concerns"
+
+  - id: "phase-b"
+    name: "Infrastructure Misconfiguration"
+    challenges:
+      - id: "cat11b-easy"
+        difficulty: "easy"
+        title: "Nginx Security Misconfiguration"
+        description: "Spot security issues in an Nginx configuration"
+        prompt: |
+          Review the following Nginx configuration (fixtures/phase-b/nginx.conf) and
+          identify all security issues. For each issue, explain:
+          1. What the problem is
+          2. Why it is a security risk
+          3. How to fix it
+        source_files:
+          - "fixtures/phase-b/nginx.conf"
+        expected_findings:
+          - id: "security-headers-missing"
+            description: "Missing security headers (X-Frame-Options, CSP, HSTS, etc.)"
+            required: true
+            points: 3
+          - id: "directory-listing"
+            description: "autoindex on exposes directory listing"
+            required: true
+            points: 3
+          - id: "server-tokens"
+            description: "server_tokens on reveals Nginx version"
+            required: true
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies missing security headers"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["X-Frame-Options", "Content-Security-Policy", "HSTS", "X-Content-Type-Options", "security header"]
+            - name: "Identifies directory listing exposure"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["autoindex", "directory listing", "directory traversal"]
+            - name: "Identifies server version disclosure"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["server_tokens", "version", "disclosure", "fingerprint"]
+            - name: "Identifies missing HTTPS redirect"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["HTTPS", "redirect", "SSL", "TLS", "listen 443", "return 301"]
+            - name: "Identifies hidden file access and nginx_status exposure"
+              points: 2
+              match_type: "keyword"
+              match_terms: [".env", ".git", "hidden files", "nginx_status", "stub_status", "restrict"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims issues that don't exist in the config"
+            - flag: "-I"
+              condition: "Identifies fewer than 3 security issues"
+
+      - id: "cat11b-medium"
+        difficulty: "medium"
+        title: "Exposed Debug Endpoints"
+        description: "Identify exposed debug endpoints and sensitive config in production"
+        prompt: |
+          Review the following production deployment configuration
+          (fixtures/phase-b/deployed-config.json) and identify all security issues.
+          Focus on settings that should never be enabled in production.
+        source_files:
+          - "fixtures/phase-b/deployed-config.json"
+        expected_findings:
+          - id: "debug-enabled"
+            description: "Debug mode, verbose errors, and stack traces enabled in production"
+            required: true
+            points: 4
+          - id: "debug-endpoints"
+            description: "Debug endpoints (/debug/env, /debug/db-status, etc.) exposed"
+            required: true
+            points: 4
+          - id: "source-maps"
+            description: "Source maps enabled in production"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies debug mode enabled in production"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["debug", "verbose_errors", "stack_traces", "production"]
+            - name: "Identifies exposed debug endpoints"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["/debug", "/debug/env", "/debug/db-status", "/debug/routes", "endpoint"]
+            - name: "Identifies source maps and GraphQL playground exposed"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["source_maps", "source map", "graphql_playground", "api_docs", "swagger"]
+            - name: "Identifies hardcoded session secret and CORS wildcard"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["session_secret", "hardcoded", "cors", "wildcard", "*", "nexus-session-secret"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims security issues in properly configured sections"
+            - flag: "-I"
+              condition: "Misses the debug endpoints entirely"
+
+      - id: "cat11b-hard"
+        difficulty: "hard"
+        title: "Permissive CORS Configuration"
+        description: "Identify overly permissive CORS that enables credential theft"
+        prompt: |
+          Review the following CORS middleware implementation
+          (fixtures/phase-b/cors-config.ts) for security vulnerabilities.
+          Explain how an attacker could exploit the CORS misconfiguration
+          and what the correct implementation should look like.
+        source_files:
+          - "fixtures/phase-b/cors-config.ts"
+        expected_findings:
+          - id: "wildcard-with-credentials"
+            description: "CORS allows any origin with credentials: true - enables credential theft"
+            required: true
+            points: 7
+          - id: "origin-reflection"
+            description: "Reflects any Origin header back as allowed origin"
+            required: true
+            points: 3
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies wildcard origin with credentials"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["wildcard", "credentials", "true", "any origin", "Access-Control-Allow-Credentials"]
+            - name: "Explains origin reflection attack"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["reflect", "origin", "attacker", "malicious site", "cross-origin"]
+            - name: "Explains credential theft scenario"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["cookie", "session", "credential theft", "authenticated", "cross-site"]
+            - name: "Suggests allowlist-based CORS"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["allowlist", "whitelist", "specific origins", "trusted domains", "validate origin"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims CORS issues that are not present in the code"
+            - flag: "-I"
+              condition: "Does not explain the credential theft attack vector"
+
+      - id: "cat11b-difficult"
+        difficulty: "difficult"
+        title: "Over-Permissive AWS IAM Policy"
+        description: "Review IAM policy for excessive permissions and privilege escalation paths"
+        prompt: |
+          Review the following AWS IAM policy (fixtures/phase-b/iam-policy.json) and:
+          1. Identify all over-permissive access patterns
+          2. Highlight privilege escalation risks
+          3. Suggest a least-privilege alternative for each statement
+          4. Note any compliance concerns (SOC2, PCI-DSS if applicable)
+        source_files:
+          - "fixtures/phase-b/iam-policy.json"
+        expected_findings:
+          - id: "wildcard-resources"
+            description: "Multiple statements use Resource: * instead of scoped ARNs"
+            required: true
+            points: 4
+          - id: "iam-privilege-escalation"
+            description: "IAM CreateUser/CreateRole/AttachPolicy allows privilege escalation"
+            required: true
+            points: 4
+          - id: "assume-any-role"
+            description: "sts:AssumeRole on arn:aws:iam::*:role/* allows cross-account escalation"
+            required: true
+            points: 4
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies wildcard resource patterns"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["Resource: *", "wildcard", "all resources", "overly broad", "not scoped"]
+            - name: "Identifies IAM privilege escalation path"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["CreateUser", "AttachRolePolicy", "privilege escalation", "create role", "attach policy", "iam:PassRole"]
+            - name: "Identifies cross-account assume role risk"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["AssumeRole", "cross-account", "arn:aws:iam::*", "any role", "lateral movement"]
+            - name: "Suggests least-privilege alternatives"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["least privilege", "scope", "specific ARN", "condition", "boundary", "permission boundary"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims issues with correctly configured statements"
+            - flag: "-I"
+              condition: "Does not address privilege escalation risks"
+
+      - id: "cat11b-hidden"
+        difficulty: "hidden"
+        title: "Secret Leaked in Docker Layer"
+        description: "Hidden bug - RUN echo $BUILD_SECRET leaks secret into image layer history"
+        prompt: |
+          Review the following multi-stage Dockerfile
+          (fixtures/phase-b/multi-stage-dockerfile) for security best practices.
+          Check for any issues with secrets handling, image security, and build process.
+        source_files:
+          - "fixtures/phase-b/multi-stage-dockerfile"
+        expected_findings:
+          - id: "secret-in-layer"
+            description: "RUN echo $BUILD_SECRET prints the secret into the image layer history"
+            required: true
+            points: 10
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies the RUN echo $BUILD_SECRET line"
+              points: 5
+              match_type: "keyword"
+              match_terms: ["echo", "BUILD_SECRET", "debug", "layer", "history", "docker history"]
+            - name: "Explains why it leaks the secret"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["layer", "image history", "docker inspect", "intermediate layer", "cached", "visible", "build log"]
+            - name: "Recommends BuildKit secrets or removal"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["BuildKit", "--mount=type=secret", "remove", "delete", "multi-stage", "squash"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims security issues that don't exist in the Dockerfile"
+            - flag: "-I"
+              condition: "Does not review the build argument handling"
+
+  - id: "phase-c"
+    name: "Deployment & Operations"
+    challenges:
+      - id: "cat11c-easy"
+        difficulty: "easy"
+        title: "Kubernetes Deployment Review"
+        description: "Review a K8s deployment YAML for best practices"
+        prompt: |
+          Review the following Kubernetes deployment configuration
+          (fixtures/phase-c/k8s-deployment.yaml) for best practices and security issues.
+          Identify problems and suggest improvements.
+        source_files:
+          - "fixtures/phase-c/k8s-deployment.yaml"
+        expected_findings:
+          - id: "no-resource-limits"
+            description: "Missing resource requests and limits on containers"
+            required: true
+            points: 3
+          - id: "no-probes"
+            description: "Missing liveness and readiness probes"
+            required: true
+            points: 3
+          - id: "secrets-in-env"
+            description: "Secrets (DATABASE_URL, JWT_SECRET) hardcoded in env instead of using K8s Secrets"
+            required: true
+            points: 4
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies missing resource limits"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["resources", "limits", "requests", "cpu", "memory", "OOM"]
+            - name: "Identifies missing health probes"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["liveness", "readiness", "probe", "health check", "livenessProbe", "readinessProbe"]
+            - name: "Identifies hardcoded secrets in env"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["secret", "hardcoded", "password123", "jwt-secret", "Secret", "secretKeyRef", "plain text"]
+            - name: "Identifies missing security context"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["securityContext", "runAsNonRoot", "readOnlyRootFilesystem", "root", "privileged"]
+            - name: "Identifies use of :latest tag"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["latest", "tag", "pinned", "immutable", "specific version"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims issues that don't exist in the YAML"
+            - flag: "-I"
+              condition: "Misses the hardcoded secrets"
+
+      - id: "cat11c-medium"
+        difficulty: "medium"
+        title: "Monitoring and Alerting Improvements"
+        description: "Review alerting config and suggest improvements"
+        prompt: |
+          Review the following monitoring and alerting configuration
+          (fixtures/phase-c/monitoring-alerts.json) and suggest improvements.
+          Consider:
+          1. Are the thresholds appropriate?
+          2. Are there missing alerts?
+          3. Is the notification strategy adequate?
+          4. What would you add for a production SaaS platform?
+        source_files:
+          - "fixtures/phase-c/monitoring-alerts.json"
+        expected_findings:
+          - id: "thresholds-too-high"
+            description: "Thresholds are too aggressive (95% CPU, 99% disk) - no early warning"
+            required: true
+            points: 4
+          - id: "missing-alerts"
+            description: "Missing alerts for latency, SSL, deployment health, etc."
+            required: true
+            points: 4
+          - id: "single-channel"
+            description: "Only email notifications - no Slack/PagerDuty for critical alerts"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies thresholds too high for early warning"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["threshold", "too high", "too late", "early warning", "80%", "90%", "graduated"]
+            - name: "Identifies missing alert types"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["latency", "SSL", "certificate", "deployment", "response time", "queue", "missing"]
+            - name: "Identifies notification channel gaps"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["Slack", "PagerDuty", "SMS", "on-call", "escalation", "critical"]
+            - name: "Notes disabled DB connection alert"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["disabled", "DatabaseConnections", "enabled: false", "should be enabled"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims the configuration has issues that don't exist"
+            - flag: "-I"
+              condition: "Does not suggest any missing alert types"
+
+      - id: "cat11c-hard"
+        difficulty: "hard"
+        title: "Failed Deployment Rollback Plan"
+        description: "Create a rollback plan for a failed production deployment"
+        prompt: |
+          Read the failed deployment scenario in fixtures/phase-c/rollback-scenario.md.
+          Create a detailed, step-by-step rollback plan that addresses all the
+          complications described in the scenario.
+        source_files:
+          - "fixtures/phase-c/rollback-scenario.md"
+        expected_findings:
+          - id: "immediate-stop"
+            description: "Stops the rolling update immediately to prevent more broken pods"
+            required: true
+            points: 3
+          - id: "rollback-strategy"
+            description: "Rolls back K8s deployment while addressing the database migration"
+            required: true
+            points: 4
+          - id: "payment-resolution"
+            description: "Addresses the Stripe payment inconsistency"
+            required: true
+            points: 3
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Immediate action to stop rollout"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["pause", "stop", "halt", "kubectl rollout undo", "rollback", "immediately"]
+            - name: "Database migration handling strategy"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["migration", "backward compatible", "column", "rename", "alias", "tier_level", "plan_tier"]
+            - name: "Stripe payment reconciliation"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["Stripe", "refund", "reconcile", "payment", "webhook", "customer", "$49.99"]
+            - name: "Cache and CDN invalidation"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["cache", "invalidate", "CDN", "purge", "Redis", "flush", "TTL"]
+            - name: "Post-incident prevention measures"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["post-mortem", "down migration", "canary", "staging", "column name", "review"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Suggests actions that would cause additional downtime or data loss"
+            - flag: "-I"
+              condition: "Ignores the database migration complication"
+
+      - id: "cat11c-difficult"
+        difficulty: "difficult"
+        title: "Capacity Planning"
+        description: "Plan infrastructure scaling for 10x growth over 4 quarters"
+        prompt: |
+          Read the capacity planning challenge in fixtures/phase-c/capacity-planning.md.
+          Create a detailed scaling plan for Q2 through Q4 that addresses all 5
+          known bottlenecks within the budget constraints.
+        source_files:
+          - "fixtures/phase-c/capacity-planning.md"
+        expected_findings:
+          - id: "bottleneck-solutions"
+            description: "Addresses all 5 known bottlenecks with specific solutions"
+            required: true
+            points: 5
+          - id: "cost-aware"
+            description: "Stays within the $12k/month budget by Q4"
+            required: true
+            points: 5
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Addresses database write contention"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["read replica", "write", "queue", "async", "bulk import", "batch", "connection pool"]
+            - name: "Addresses WebSocket horizontal scaling"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["Redis pub/sub", "sticky sessions", "WebSocket", "horizontal", "file descriptor", "adapter"]
+            - name: "Addresses image processing and search bottlenecks"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["async", "queue", "worker", "Elasticsearch", "search", "image", "CDN", "background"]
+            - name: "Provides quarterly cost estimates"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["cost", "budget", "$", "month", "quarter", "estimate"]
+            - name: "Includes horizontal vs vertical scaling rationale"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["horizontal", "vertical", "auto-scale", "scale out", "scale up", "replicas"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Recommends solutions that exceed the budget without acknowledging it"
+            - flag: "-I"
+              condition: "Ignores the budget constraints or known bottlenecks"
+
+      - id: "cat11c-hidden"
+        difficulty: "hidden"
+        title: "Dangerous Runbook Step"
+        description: "Hidden bug - runbook has kubectl delete pods --all as a recovery step"
+        prompt: |
+          Review the following incident runbook (fixtures/phase-c/incident-runbook.md)
+          for completeness and correctness. Identify any steps that could cause
+          additional harm during an incident if followed as written.
+        source_files:
+          - "fixtures/phase-c/incident-runbook.md"
+        expected_findings:
+          - id: "dangerous-delete-all"
+            description: "Step 2 in section 1 uses 'kubectl delete pods --all' which kills ALL pods simultaneously"
+            required: true
+            points: 7
+          - id: "flushall-redis"
+            description: "Section 3 uses FLUSHALL which deletes ALL Redis data including sessions"
+            required: false
+            points: 3
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies kubectl delete pods --all as dangerous"
+              points: 4
+              match_type: "keyword"
+              match_terms: ["delete pods --all", "all pods", "simultaneous", "downtime", "outage", "dangerous"]
+            - name: "Suggests safer alternative (rollout restart or targeted delete)"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["rollout restart", "one at a time", "targeted", "specific pod", "graceful", "rolling"]
+            - name: "Identifies FLUSHALL as destructive"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["FLUSHALL", "flush all", "session", "data loss", "all data", "destructive"]
+            - name: "Suggests safer Redis alternative"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["SCAN", "expire", "TTL", "selective", "specific keys", "pattern"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims issues with steps that are actually safe"
+            - flag: "-I"
+              condition: "Does not review the recovery steps for safety"

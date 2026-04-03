@@ -1,0 +1,11 @@
+category_id: 4
+total_bugs: 1
+
+bugs:
+  - id: "type-lie-null-email"
+    difficulty: "hidden"
+    file: "modules/typescript/form-validator.ts"
+    line: 85
+    description: "Type annotation declares email as string but the constructor sets it to null via a cast (null as unknown as string). When validateField calls value.trim() on the email field, it throws TypeError at runtime because null has no .trim() method."
+    type: "type-lie"
+    verification: "Check line 85 in the constructor - (initial?.email ?? null) as unknown as string casts null to string. Also line 143 in reset() - null as unknown as string. The validateField function on line 48 calls value.trim() which will throw TypeError when value is null."

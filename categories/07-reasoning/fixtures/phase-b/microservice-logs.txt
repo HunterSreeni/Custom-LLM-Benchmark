@@ -1,0 +1,100 @@
+=== Service A: API Gateway (api-gw-pod-2) ===
+
+2026-04-03 10:15:01.001 [INFO] [reqId=X-7f3a9b] Incoming POST /api/orders from 203.0.113.45
+2026-04-03 10:15:01.003 [INFO] [reqId=X-7f3a9b] Auth token validated for user u_9912
+2026-04-03 10:15:01.005 [INFO] [reqId=X-7f3a9b] Routing to order-service
+2026-04-03 10:15:01.550 [INFO] [reqId=X-7f3a9b] order-service responded 201 in 545ms
+2026-04-03 10:15:01.551 [INFO] [reqId=X-7f3a9b] Response sent to client: 201 Created
+
+2026-04-03 10:15:12.100 [INFO] [reqId=X-8a2c4d] Incoming POST /api/orders from 198.51.100.22
+2026-04-03 10:15:12.102 [INFO] [reqId=X-8a2c4d] Auth token validated for user u_3387
+2026-04-03 10:15:12.104 [INFO] [reqId=X-8a2c4d] Routing to order-service
+2026-04-03 10:15:12.780 [INFO] [reqId=X-8a2c4d] order-service responded 201 in 676ms
+2026-04-03 10:15:12.781 [INFO] [reqId=X-8a2c4d] Response sent to client: 201 Created
+
+2026-04-03 10:15:30.200 [INFO] [reqId=X-c1e5f8] Incoming POST /api/orders from 203.0.113.78
+2026-04-03 10:15:30.202 [INFO] [reqId=X-c1e5f8] Auth token validated for user u_5501
+2026-04-03 10:15:30.204 [INFO] [reqId=X-c1e5f8] Routing to order-service
+2026-04-03 10:15:30.920 [INFO] [reqId=X-c1e5f8] order-service responded 201 in 716ms
+2026-04-03 10:15:30.921 [INFO] [reqId=X-c1e5f8] Response sent to client: 201 Created
+
+2026-04-03 10:16:45.000 [INFO] [reqId=X-d4f7a2] Incoming GET /api/orders/ORD-55123 from 203.0.113.45
+2026-04-03 10:16:45.002 [INFO] [reqId=X-d4f7a2] Auth token validated for user u_9912
+2026-04-03 10:16:45.004 [INFO] [reqId=X-d4f7a2] Routing to order-service
+2026-04-03 10:16:45.210 [WARN] [reqId=X-d4f7a2] order-service responded 200 in 206ms (order shows 'approved' but user expected 'rejected' - see support ticket SUP-44291)
+
+=== Service B: Order Service (order-svc-pod-1) ===
+
+2026-04-03 10:15:01.010 [INFO] [reqId=X-7f3a9b] Received create order request: userId=u_9912, items=[{sku:"WIDGET-500", qty:3}]
+2026-04-03 10:15:01.015 [INFO] [reqId=X-7f3a9b] Calling inventory-service for stock check
+2026-04-03 10:15:01.320 [INFO] [reqId=X-7f3a9b] inventory-service response: {sku:"WIDGET-500", available:15, reserved:0} (CACHE HIT - age: 47s)
+2026-04-03 10:15:01.322 [INFO] [reqId=X-7f3a9b] Stock sufficient: requested=3, available=15
+2026-04-03 10:15:01.340 [INFO] [reqId=X-7f3a9b] Order ORD-55121 created with status=approved
+2026-04-03 10:15:01.345 [INFO] [reqId=X-7f3a9b] Calling inventory-service to reserve stock
+2026-04-03 10:15:01.545 [INFO] [reqId=X-7f3a9b] Stock reserved for ORD-55121
+
+2026-04-03 10:15:12.110 [INFO] [reqId=X-8a2c4d] Received create order request: userId=u_3387, items=[{sku:"WIDGET-500", qty:8}]
+2026-04-03 10:15:12.115 [INFO] [reqId=X-8a2c4d] Calling inventory-service for stock check
+2026-04-03 10:15:12.420 [INFO] [reqId=X-8a2c4d] inventory-service response: {sku:"WIDGET-500", available:15, reserved:0} (CACHE HIT - age: 58s)
+2026-04-03 10:15:12.422 [INFO] [reqId=X-8a2c4d] Stock sufficient: requested=8, available=15
+2026-04-03 10:15:12.440 [INFO] [reqId=X-8a2c4d] Order ORD-55122 created with status=approved
+2026-04-03 10:15:12.445 [INFO] [reqId=X-8a2c4d] Calling inventory-service to reserve stock
+2026-04-03 10:15:12.775 [INFO] [reqId=X-8a2c4d] Stock reserved for ORD-55122
+
+2026-04-03 10:15:30.210 [INFO] [reqId=X-c1e5f8] Received create order request: userId=u_5501, items=[{sku:"WIDGET-500", qty:10}]
+2026-04-03 10:15:30.215 [INFO] [reqId=X-c1e5f8] Calling inventory-service for stock check
+2026-04-03 10:15:30.520 [INFO] [reqId=X-c1e5f8] inventory-service response: {sku:"WIDGET-500", available:15, reserved:0} (CACHE HIT - age: 69s)
+2026-04-03 10:15:30.522 [INFO] [reqId=X-c1e5f8] Stock sufficient: requested=10, available=15
+2026-04-03 10:15:30.540 [INFO] [reqId=X-c1e5f8] Order ORD-55123 created with status=approved
+2026-04-03 10:15:30.545 [INFO] [reqId=X-c1e5f8] Calling inventory-service to reserve stock
+2026-04-03 10:15:30.915 [INFO] [reqId=X-c1e5f8] Stock reserved for ORD-55123
+
+=== Service C: Inventory Service (inv-svc-pod-1) ===
+
+2026-04-03 10:14:10.001 [INFO] Cache refresh triggered for high-demand SKUs
+2026-04-03 10:14:10.150 [INFO] DB query: SELECT sku, quantity, reserved FROM inventory WHERE sku IN ('WIDGET-500','GADGET-200','DOOHICK-100')
+2026-04-03 10:14:10.155 [INFO] Cache updated: WIDGET-500={quantity:15, reserved:0}, GADGET-200={quantity:42, reserved:5}, DOOHICK-100={quantity:0, reserved:0}
+2026-04-03 10:14:10.156 [INFO] Cache TTL set to 120s for all refreshed entries
+
+2026-04-03 10:15:01.310 [DEBUG] [reqId=X-7f3a9b] GET /api/inventory/WIDGET-500 - serving from cache (age: 51s, ttl remaining: 69s)
+2026-04-03 10:15:01.311 [DEBUG] [reqId=X-7f3a9b] Response: {sku:"WIDGET-500", available:15, reserved:0}
+
+2026-04-03 10:15:01.540 [INFO] [reqId=X-7f3a9b] POST /api/inventory/reserve - sku=WIDGET-500, qty=3, orderId=ORD-55121
+2026-04-03 10:15:01.541 [INFO] [reqId=X-7f3a9b] DB UPDATE: SET reserved = reserved + 3 WHERE sku = 'WIDGET-500'
+2026-04-03 10:15:01.543 [INFO] [reqId=X-7f3a9b] Reservation confirmed. DB state: quantity=15, reserved=3, effective_available=12
+2026-04-03 10:15:01.544 [WARN] [reqId=X-7f3a9b] Cache NOT invalidated after reservation (cache invalidation disabled - see config flag CACHE_INVALIDATE_ON_WRITE=false)
+
+2026-04-03 10:15:12.415 [DEBUG] [reqId=X-8a2c4d] GET /api/inventory/WIDGET-500 - serving from cache (age: 62s, ttl remaining: 58s)
+2026-04-03 10:15:12.416 [DEBUG] [reqId=X-8a2c4d] Response: {sku:"WIDGET-500", available:15, reserved:0}
+
+2026-04-03 10:15:12.770 [INFO] [reqId=X-8a2c4d] POST /api/inventory/reserve - sku=WIDGET-500, qty=8, orderId=ORD-55122
+2026-04-03 10:15:12.771 [INFO] [reqId=X-8a2c4d] DB UPDATE: SET reserved = reserved + 8 WHERE sku = 'WIDGET-500'
+2026-04-03 10:15:12.773 [INFO] [reqId=X-8a2c4d] Reservation confirmed. DB state: quantity=15, reserved=11, effective_available=4
+2026-04-03 10:15:12.774 [WARN] [reqId=X-8a2c4d] Cache NOT invalidated after reservation (cache invalidation disabled - see config flag CACHE_INVALIDATE_ON_WRITE=false)
+
+2026-04-03 10:15:30.515 [DEBUG] [reqId=X-c1e5f8] GET /api/inventory/WIDGET-500 - serving from cache (age: 80s, ttl remaining: 40s)
+2026-04-03 10:15:30.516 [DEBUG] [reqId=X-c1e5f8] Response: {sku:"WIDGET-500", available:15, reserved:0}
+
+2026-04-03 10:15:30.910 [INFO] [reqId=X-c1e5f8] POST /api/inventory/reserve - sku=WIDGET-500, qty=10, orderId=ORD-55123
+2026-04-03 10:15:30.911 [INFO] [reqId=X-c1e5f8] DB UPDATE: SET reserved = reserved + 10 WHERE sku = 'WIDGET-500'
+2026-04-03 10:15:30.913 [INFO] [reqId=X-c1e5f8] Reservation confirmed. DB state: quantity=15, reserved=21, effective_available=-6
+2026-04-03 10:15:30.914 [ERROR] [reqId=X-c1e5f8] OVERSOLD ALERT: WIDGET-500 effective_available=-6 (reserved exceeds quantity!)
+2026-04-03 10:15:30.915 [WARN] [reqId=X-c1e5f8] Cache NOT invalidated after reservation (cache invalidation disabled - see config flag CACHE_INVALIDATE_ON_WRITE=false)
+
+2026-04-03 10:16:10.001 [INFO] Cache refresh triggered for high-demand SKUs
+2026-04-03 10:16:10.150 [INFO] DB query: SELECT sku, quantity, reserved FROM inventory WHERE sku IN ('WIDGET-500','GADGET-200','DOOHICK-100')
+2026-04-03 10:16:10.155 [INFO] Cache updated: WIDGET-500={quantity:15, reserved:21}, GADGET-200={quantity:42, reserved:5}, DOOHICK-100={quantity:0, reserved:0}
+
+--- Configuration Context ---
+inv-svc-pod-1 deployment config:
+  CACHE_TTL_SECONDS: 120
+  CACHE_INVALIDATE_ON_WRITE: false     # <-- This was changed from true to false in deploy v1.8.2 (2 weeks ago)
+  CACHE_REFRESH_INTERVAL: 120          # Changed from 30s to 120s in same deploy "to reduce DB load"
+  STOCK_CHECK_SOURCE: "cache"          # Options: "cache", "db_direct"
+  RESERVATION_USES_DB: true            # Reservations always go to DB (correct)
+
+--- Summary of Actual Stock ---
+  10:14:10 - WIDGET-500: qty=15, reserved=0,  available=15 (cache + DB agree)
+  10:15:01 - After ORD-55121: qty=15, reserved=3,  available=12 (DB correct, cache stale: shows 15)
+  10:15:12 - After ORD-55122: qty=15, reserved=11, available=4  (DB correct, cache stale: shows 15)
+  10:15:30 - After ORD-55123: qty=15, reserved=21, available=-6 (OVERSOLD! Cache still showed 15 available)

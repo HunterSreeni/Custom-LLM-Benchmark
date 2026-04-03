@@ -1,0 +1,25 @@
+# robots.txt for app.techmart.local
+# Last updated: 2026-03-15
+
+User-agent: *
+Disallow: /admin/
+Disallow: /admin/users
+Disallow: /admin/config
+Disallow: /api/internal/
+Disallow: /api/internal/metrics
+Disallow: /api/internal/health
+Disallow: /debug/
+Disallow: /debug/pprof/
+Disallow: /debug/vars
+Disallow: /api/v2/
+Disallow: /api/v2/graphql
+Disallow: /.well-known/
+Disallow: /server-status
+
+User-agent: Googlebot
+Allow: /products/
+Allow: /categories/
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: https://app.techmart.local/sitemap.xml

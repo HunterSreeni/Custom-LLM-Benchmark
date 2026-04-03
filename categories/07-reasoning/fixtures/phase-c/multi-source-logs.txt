@@ -1,0 +1,85 @@
+=== Nginx Access Log (web-prod-01) ===
+
+203.0.113.45 - - [03/Apr/2026:14:00:01 +0000] "POST /api/orders HTTP/1.1" 201 342 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" reqId=X-a1b2c3 rt=1.245
+198.51.100.22 - - [03/Apr/2026:14:00:03 +0000] "GET /api/products/PRD-500 HTTP/1.1" 200 1847 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X)" reqId=X-d4e5f6 rt=0.089
+203.0.113.78 - - [03/Apr/2026:14:00:05 +0000] "POST /api/orders HTTP/1.1" 500 128 "-" "Mozilla/5.0 (iPhone; CPU iPhone OS)" reqId=X-g7h8i9 rt=5.002
+10.0.1.100 - - [03/Apr/2026:14:00:07 +0000] "GET /api/health HTTP/1.1" 200 15 "-" "kube-probe/1.28" reqId=X-j0k1l2 rt=0.003
+203.0.113.45 - - [03/Apr/2026:14:00:10 +0000] "GET /api/orders/ORD-99100 HTTP/1.1" 200 523 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" reqId=X-m3n4o5 rt=0.156
+198.51.100.99 - - [03/Apr/2026:14:00:12 +0000] "POST /api/orders HTTP/1.1" 201 348 "-" "Mozilla/5.0 (Linux; Android 14)" reqId=X-p6q7r8 rt=0.987
+203.0.113.200 - - [03/Apr/2026:14:00:15 +0000] "POST /api/checkout HTTP/1.1" 504 64 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" reqId=X-s9t0u1 rt=30.001
+
+=== Application Server Log (order-svc-pod-1) ===
+
+2026-04-03 14:00:01.050 [INFO] [reqId=X-a1b2c3] [thread=http-8080-exec-3] Received POST /api/orders - userId=u_9912, items=3
+2026-04-03 14:00:01.055 [DEBUG] [reqId=X-a1b2c3] [thread=http-8080-exec-3] Validating order payload (schema v2)
+2026-04-03 14:00:01.060 [DEBUG] [reqId=X-a1b2c3] [thread=http-8080-exec-3] Payload valid, checking inventory
+2026-04-03 14:00:01.065 [INFO] [reqId=X-a1b2c3] [thread=http-8080-exec-3] Executing DB query: inventory_check - params: [SKU-100, SKU-200, SKU-300]
+2026-04-03 14:00:01.280 [INFO] [reqId=X-a1b2c3] [thread=http-8080-exec-3] DB query completed in 215ms - inventory sufficient
+2026-04-03 14:00:01.285 [INFO] [reqId=X-a1b2c3] [thread=http-8080-exec-3] Executing DB query: insert_order - params: [ORD-99101, u_9912, 149.97]
+2026-04-03 14:00:01.290 [INFO] [reqId=X-a1b2c3] [thread=http-8080-exec-3] DB query completed in 5ms - order inserted
+2026-04-03 14:00:01.291 [INFO] [reqId=X-a1b2c3] [thread=http-8080-exec-3] Response: 201 Created in 241ms
+
+2026-04-03 14:00:03.015 [INFO] [reqId=X-d4e5f6] [thread=http-8080-exec-5] Received GET /api/products/PRD-500
+2026-04-03 14:00:03.020 [DEBUG] [reqId=X-d4e5f6] [thread=http-8080-exec-5] Cache hit for product PRD-500
+2026-04-03 14:00:03.021 [INFO] [reqId=X-d4e5f6] [thread=http-8080-exec-5] Response: 200 OK in 6ms
+
+2026-04-03 14:00:05.010 [INFO] [reqId=X-g7h8i9] [thread=http-8080-exec-7] Received POST /api/orders - userId=u_5501, items=1
+2026-04-03 14:00:05.015 [DEBUG] [reqId=X-g7h8i9] [thread=http-8080-exec-7] Validating order payload (schema v2)
+2026-04-03 14:00:05.020 [DEBUG] [reqId=X-g7h8i9] [thread=http-8080-exec-7] Payload valid, checking inventory
+2026-04-03 14:00:05.025 [INFO] [reqId=X-g7h8i9] [thread=http-8080-exec-7] Executing DB query: inventory_check - params: [SKU-999]
+2026-04-03 14:00:09.030 [WARN] [reqId=X-g7h8i9] [thread=http-8080-exec-7] DB query slow: inventory_check took 4005ms (threshold: 1000ms)
+2026-04-03 14:00:09.031 [INFO] [reqId=X-g7h8i9] [thread=http-8080-exec-7] Inventory check passed for SKU-999
+2026-04-03 14:00:09.035 [INFO] [reqId=X-g7h8i9] [thread=http-8080-exec-7] Executing DB query: insert_order - params: [ORD-99102, u_5501, 999.00]
+2026-04-03 14:00:10.005 [ERROR] [reqId=X-g7h8i9] [thread=http-8080-exec-7] DB query failed: insert_order - ERROR: deadlock detected - Process 18234 waits for ShareLock on transaction 5821234; blocked by process 18235
+2026-04-03 14:00:10.010 [ERROR] [reqId=X-g7h8i9] [thread=http-8080-exec-7] Order creation failed: org.postgresql.util.PSQLException: ERROR: deadlock detected
+2026-04-03 14:00:10.011 [INFO] [reqId=X-g7h8i9] [thread=http-8080-exec-7] Response: 500 Internal Server Error in 5001ms
+
+2026-04-03 14:00:10.100 [INFO] [reqId=X-m3n4o5] [thread=http-8080-exec-2] Received GET /api/orders/ORD-99100 - userId=u_9912
+2026-04-03 14:00:10.105 [INFO] [reqId=X-m3n4o5] [thread=http-8080-exec-2] Executing DB query: get_order - params: [ORD-99100]
+2026-04-03 14:00:10.250 [INFO] [reqId=X-m3n4o5] [thread=http-8080-exec-2] DB query completed in 145ms
+2026-04-03 14:00:10.251 [INFO] [reqId=X-m3n4o5] [thread=http-8080-exec-2] Response: 200 OK in 151ms
+
+2026-04-03 14:00:12.050 [INFO] [reqId=X-p6q7r8] [thread=http-8080-exec-4] Received POST /api/orders - userId=u_3387, items=2
+2026-04-03 14:00:12.055 [DEBUG] [reqId=X-p6q7r8] [thread=http-8080-exec-4] Validating order payload (schema v2)
+2026-04-03 14:00:12.060 [DEBUG] [reqId=X-p6q7r8] [thread=http-8080-exec-4] Payload valid, checking inventory
+2026-04-03 14:00:12.065 [INFO] [reqId=X-p6q7r8] [thread=http-8080-exec-4] Executing DB query: inventory_check - params: [SKU-100, SKU-450]
+2026-04-03 14:00:12.480 [INFO] [reqId=X-p6q7r8] [thread=http-8080-exec-4] DB query completed in 415ms - inventory sufficient
+2026-04-03 14:00:12.485 [INFO] [reqId=X-p6q7r8] [thread=http-8080-exec-4] Executing DB query: insert_order - params: [ORD-99103, u_3387, 74.98]
+2026-04-03 14:00:12.990 [INFO] [reqId=X-p6q7r8] [thread=http-8080-exec-4] DB query completed in 505ms - order inserted
+2026-04-03 14:00:12.991 [INFO] [reqId=X-p6q7r8] [thread=http-8080-exec-4] Response: 201 Created in 941ms
+
+2026-04-03 14:00:15.010 [INFO] [reqId=X-s9t0u1] [thread=http-8080-exec-6] Received POST /api/checkout - userId=u_7700, orderId=ORD-99098
+2026-04-03 14:00:15.015 [INFO] [reqId=X-s9t0u1] [thread=http-8080-exec-6] Executing DB query: get_order_for_checkout - params: [ORD-99098]
+2026-04-03 14:00:15.220 [INFO] [reqId=X-s9t0u1] [thread=http-8080-exec-6] DB query completed in 205ms
+2026-04-03 14:00:15.225 [INFO] [reqId=X-s9t0u1] [thread=http-8080-exec-6] Calling payment service for ORD-99098, amount=245.00
+2026-04-03 14:00:45.010 [ERROR] [reqId=X-s9t0u1] [thread=http-8080-exec-6] Payment service timeout after 30000ms
+2026-04-03 14:00:45.011 [ERROR] [reqId=X-s9t0u1] [thread=http-8080-exec-6] Checkout failed: java.net.SocketTimeoutException: Read timed out
+2026-04-03 14:00:45.012 [INFO] [reqId=X-s9t0u1] [thread=http-8080-exec-6] Response: 504 Gateway Timeout in 30002ms
+
+=== PostgreSQL Slow Query Log (db-prod-01) ===
+
+2026-04-03 14:00:01.068 [db-prod-01] LOG:  duration: 212.000 ms  statement: SELECT i.sku, i.quantity, i.reserved FROM inventory i WHERE i.sku IN ('SKU-100','SKU-200','SKU-300') FOR UPDATE
+  -- context: reqId=X-a1b2c3, client=10.0.2.15:54321, db=orders_prod
+
+2026-04-03 14:00:05.028 [db-prod-01] LOG:  duration: 4002.000 ms  statement: SELECT i.sku, i.quantity, i.reserved FROM inventory i WHERE i.sku IN ('SKU-999') FOR UPDATE
+  -- context: reqId=X-g7h8i9, client=10.0.2.15:54325, db=orders_prod
+  -- NOTE: SKU-999 has 50,000+ reservation records. Full table scan on non-indexed reserved column.
+
+2026-04-03 14:00:09.037 [db-prod-01] LOG:  duration: 970.000 ms  statement: INSERT INTO orders (id, user_id, total, status, created_at) VALUES ('ORD-99102', 'u_5501', 999.00, 'pending', NOW())
+  -- context: reqId=X-g7h8i9, client=10.0.2.15:54325, db=orders_prod
+  -- ERROR: deadlock detected
+  -- DETAIL: Process 18234 waits for ShareLock on transaction 5821234; blocked by process 18235.
+  -- Process 18235 waits for ShareLock on transaction 5821233; blocked by process 18234.
+  -- HINT: See server log for query details.
+
+2026-04-03 14:00:10.108 [db-prod-01] LOG:  duration: 142.000 ms  statement: SELECT o.* FROM orders o WHERE o.id = 'ORD-99100' AND o.user_id = 'u_9912'
+  -- context: reqId=X-m3n4o5, client=10.0.2.15:54327, db=orders_prod
+
+2026-04-03 14:00:12.068 [db-prod-01] LOG:  duration: 412.000 ms  statement: SELECT i.sku, i.quantity, i.reserved FROM inventory i WHERE i.sku IN ('SKU-100','SKU-450') FOR UPDATE
+  -- context: reqId=X-p6q7r8, client=10.0.2.15:54329, db=orders_prod
+
+2026-04-03 14:00:12.487 [db-prod-01] LOG:  duration: 502.000 ms  statement: INSERT INTO orders (id, user_id, total, status, created_at) VALUES ('ORD-99103', 'u_3387', 74.98, 'pending', NOW())
+  -- context: reqId=X-p6q7r8, client=10.0.2.15:54329, db=orders_prod
+
+2026-04-03 14:00:15.018 [db-prod-01] LOG:  duration: 202.000 ms  statement: SELECT o.*, oi.* FROM orders o JOIN order_items oi ON o.id = oi.order_id WHERE o.id = 'ORD-99098'
+  -- context: reqId=X-s9t0u1, client=10.0.2.15:54331, db=orders_prod

@@ -1,0 +1,246 @@
+category:
+  id: 3
+  name: "Bug Detection"
+  slug: "bug-detection"
+  type: "standard"
+  tech_stack: ["React 18", "Vite", "Tailwind CSS", "TypeScript", "Zustand"]
+
+phases:
+  - id: "default"
+    name: "Bug Detection"
+    challenges:
+      - id: "cat3-easy"
+        difficulty: "easy"
+        title: "React Anti-patterns"
+        description: "useEffect missing dependency, wrong key in .map()"
+        prompt: |
+          Review the following React e-commerce application source code.
+          Identify any bugs, anti-patterns, or issues you find.
+          Focus on React-specific problems like incorrect hook usage, missing dependencies, or wrong keys.
+
+          List each issue with: file path, line number, description, severity, and suggested fix.
+        source_files:
+          - "app/src/hooks/use-products.ts"
+          - "app/src/components/ProductList.tsx"
+        expected_findings:
+          - id: "useeffect-dep"
+            description: "useEffect missing categoryFilter dependency"
+            file: "app/src/hooks/use-products.ts"
+            required: true
+            points: 5
+          - id: "map-key-index"
+            description: "Using array index as key in .map()"
+            file: "app/src/components/ProductList.tsx"
+            required: false
+            points: 5
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies useEffect dependency issue"
+              points: 5
+              match_type: "keyword"
+              match_terms: ["useEffect", "dependency"]
+            - name: "Identifies wrong key usage"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["key", "index"]
+            - name: "Provides correct fix"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["dependency array"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims bugs that don't exist in the code"
+          - flag: "-I"
+            condition: "Ignores instruction to focus on React-specific problems"
+
+      - id: "cat3-medium"
+        difficulty: "medium"
+        title: "Race Condition in State Updates"
+        description: "Stale closure causing lost updates in cart quantity management"
+        prompt: |
+          Review the following React shopping cart component code.
+          Identify any concurrency or state management bugs that could cause incorrect behavior
+          under rapid user interaction (e.g., double-clicking buttons quickly).
+
+          List each issue with: file path, line number, description, severity, and suggested fix.
+        source_files:
+          - "app/src/components/Cart.tsx"
+          - "app/src/components/CartItem.tsx"
+          - "app/src/store/cart-store.ts"
+        expected_findings:
+          - id: "cart-race-condition"
+            description: "Race condition - reads quantity from stale closure instead of using functional updater"
+            file: "app/src/components/Cart.tsx"
+            required: true
+            points: 10
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies stale closure or race condition"
+              points: 5
+              match_type: "keyword"
+              match_terms: ["stale", "closure", "race condition"]
+            - name: "Points to quantities read from closure"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["quantities", "currentQty"]
+            - name: "Suggests functional state update as fix"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["prev", "updater", "callback"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims bugs that don't exist in the code"
+          - flag: "-I"
+            condition: "Ignores instruction to focus on concurrency/state issues"
+
+      - id: "cat3-hard"
+        difficulty: "hard"
+        title: "Memory Leak and Security Vulnerability"
+        description: "WebSocket connection leak and XSS via unsanitized HTML rendering"
+        prompt: |
+          Review the following React hooks and components for security vulnerabilities
+          and resource management issues. Consider what happens during component lifecycle
+          events (mount, unmount, re-render) and how user-generated content is handled.
+
+          List each issue with: file path, line number, description, severity, and suggested fix.
+        source_files:
+          - "app/src/hooks/use-websocket.ts"
+          - "app/src/components/ReviewSection.tsx"
+          - "app/src/data/products.ts"
+        expected_findings:
+          - id: "websocket-leak"
+            description: "WebSocket not closed in useEffect cleanup - memory leak"
+            file: "app/src/hooks/use-websocket.ts"
+            required: true
+            points: 7
+          - id: "xss-innerhtml"
+            description: "XSS via dangerouslySetInnerHTML with unsanitized review content"
+            file: "app/src/components/ReviewSection.tsx"
+            required: true
+            points: 8
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies WebSocket not being closed"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["close", "cleanup", "WebSocket"]
+            - name: "Explains memory leak consequence"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["memory leak", "connection", "unmount"]
+            - name: "Identifies dangerouslySetInnerHTML XSS risk"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["dangerouslySetInnerHTML", "XSS", "sanitize"]
+            - name: "Suggests DOMPurify or similar sanitization"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["DOMPurify", "sanitize", "escape"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims bugs that don't exist in the code"
+          - flag: "-I"
+            condition: "Ignores instruction to check lifecycle and security"
+
+      - id: "cat3-difficult"
+        difficulty: "difficult"
+        title: "SSR Hydration and CSS Specificity Issues"
+        description: "Hydration mismatch from Date in render and Tailwind class conflicts"
+        prompt: |
+          Review the following React components for subtle rendering issues.
+          Consider server-side rendering compatibility, CSS class specificity,
+          and responsive design correctness. These are not crash-level bugs but
+          cause visible UI problems or framework warnings.
+
+          List each issue with: file path, line number, description, severity, and suggested fix.
+        source_files:
+          - "app/src/pages/Product.tsx"
+          - "app/src/components/MobileNav.tsx"
+        expected_findings:
+          - id: "hydration-mismatch"
+            description: "new Date().toLocaleString() in render body causes SSR hydration mismatch"
+            file: "app/src/pages/Product.tsx"
+            required: true
+            points: 8
+          - id: "tailwind-mobile-conflict"
+            description: "Conflicting 'hidden md:flex flex' classes - unconditional flex overrides hidden"
+            file: "app/src/components/MobileNav.tsx"
+            required: true
+            points: 7
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies Date in render as hydration issue"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["Date", "hydration", "server"]
+            - name: "Suggests useEffect + useState pattern"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["useEffect", "useState", "client"]
+            - name: "Identifies conflicting Tailwind classes"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["hidden", "flex", "conflict", "override"]
+            - name: "Explains mobile breakpoint behavior"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["mobile", "breakpoint", "responsive"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims bugs that don't exist in the code"
+          - flag: "-I"
+            condition: "Ignores instruction to check SSR and CSS issues"
+
+      - id: "cat3-hidden"
+        difficulty: "hidden"
+        title: "Cross-Tab State Synchronization"
+        description: "Zustand persist middleware does not sync state across browser tabs"
+        prompt: |
+          Review the entire e-commerce application codebase for architectural or
+          state management issues that could cause data loss or inconsistency in
+          real-world usage scenarios (multiple tabs, concurrent sessions, etc.).
+
+          Consider the full user journey: browsing, adding to cart, and checking out
+          across different browser tabs or windows.
+
+          List each issue with: file path, line number, description, severity, and suggested fix.
+        source_files:
+          - "app/src/store/cart-store.ts"
+          - "app/src/components/Cart.tsx"
+          - "app/src/pages/Checkout.tsx"
+          - "app/src/hooks/use-products.ts"
+          - "app/src/hooks/use-websocket.ts"
+          - "app/src/components/ProductList.tsx"
+          - "app/src/components/ReviewSection.tsx"
+          - "app/src/pages/Product.tsx"
+          - "app/src/components/MobileNav.tsx"
+        expected_findings:
+          - id: "zustand-multi-tab"
+            description: "Zustand persist does not sync across tabs - stale cart data can overwrite changes from other tabs"
+            file: "app/src/store/cart-store.ts"
+            required: true
+            points: 15
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies cross-tab sync issue"
+              points: 4
+              match_type: "keyword"
+              match_terms: ["tab", "sync", "storage"]
+            - name: "Explains stale data overwrite scenario"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["stale", "overwrite", "checkout"]
+            - name: "Suggests storage event listener or BroadcastChannel"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["storage event", "BroadcastChannel", "addEventListener"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims bugs that don't exist in the code"
+          - flag: "-I"
+            condition: "Fails to consider multi-tab scenarios as instructed"

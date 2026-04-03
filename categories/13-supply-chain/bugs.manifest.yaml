@@ -1,0 +1,251 @@
+category_id: 13
+category_name: Supply Chain & Dependency Security
+total_bugs: 10
+bugs:
+- id: bug-1
+  challenge_id: cat13a-easy
+  difficulty: easy
+  phase: a
+  type: Known CVE in Direct Dependency
+  severity: high
+  title: Multiple npm packages with known prototype pollution and ReDoS CVEs
+  description: 'The vulnerable-package.json contains three dependencies with known
+    CVEs:
+
+    1. lodash@4.17.19 - Prototype pollution (CVE-2020-28500, CVE-2021-23337)
+
+    2. minimist@0.2.1 - Prototype pollution (CVE-2020-7598, CVE-2021-44906)
+
+    3. node-fetch@2.6.0 - Information exposure (CVE-2022-0235)
+
+    '
+  fix: Upgrade lodash to 4.17.21+, minimist to 1.2.6+, node-fetch to 2.6.7+
+  verification: Cross-reference dependency versions against npm audit or CVE databases
+  file: fixtures/vulnerable-package.json
+  line: 1
+- id: bug-2
+  challenge_id: cat13a-medium
+  difficulty: medium
+  phase: a
+  type: Typosquatting
+  severity: critical
+  title: Two typosquatted packages in Python requirements
+  description: 'The requirements.txt contains two typosquatted packages:
+
+    1. requsets==2.28.0 - misspelling of ''requests'' (swapped ''e'' and ''s'')
+
+    2. python-dateutl==2.8.2 - misspelling of ''python-dateutil'' (missing ''i'')
+
+    These could be malicious packages on PyPI that execute arbitrary code on install.
+
+    '
+  fix: Replace requsets with requests, python-dateutl with python-dateutil
+  verification: Check each package name against PyPI for legitimacy and download counts
+  file: fixtures/typosquatted-requirements.txt
+  line: 1
+- id: bug-3
+  challenge_id: cat13a-hard
+  difficulty: hard
+  phase: a
+  type: Lockfile Version Drift
+  severity: medium
+  title: Lockfile pins express@4.18.2 which has known CVE despite range allowing update
+  description: 'The package.json specifies "express": "^4.18.0" which would allow
+    4.18.3+.
+
+    However, the lockfile pins express@4.18.2 which has known vulnerabilities
+
+    (path traversal via serve-static dependency). Running npm ci would install
+
+    the vulnerable pinned version. Running npm install might update it.
+
+    '
+  fix: Run npm audit fix to update lockfile, or manually update express resolution;
+    always use npm ci in CI/CD and regenerate lockfile periodically
+  verification: Compare resolved versions in lockfile against CVE databases
+  file: fixtures/drifted-package.json
+  line: 1
+- id: bug-4
+  challenge_id: cat13a-difficult
+  difficulty: difficult
+  phase: a
+  type: Transitive Dependency Vulnerability
+  severity: high
+  title: ReDoS in ret@0.2.2 via drizzle-orm -> sql-formatter -> nearley -> randexp
+    chain
+  description: 'All direct dependencies are clean. The vulnerability exists 5 levels
+    deep:
+
+    drizzle-orm -> sql-formatter -> nearley -> randexp -> ret@0.2.2
+
+    ret@0.2.2 has CVE-2020-28469 (ReDoS, CVSS 7.5).
+
+    This is invisible without examining the full dependency tree.
+
+    '
+  fix: Use npm overrides to force ret@0.3.0+, or wait for upstream fix in the dependency
+    chain
+  verification: Trace the dependency chain from the tree output and check ret version
+    against CVE databases
+  file: fixtures/transitive-package.json
+  line: 1
+- id: bug-5
+  challenge_id: cat13a-hidden
+  difficulty: hidden
+  phase: a
+  type: Malicious Package with Data Exfiltration
+  severity: critical
+  title: dev-environment-setup contains postinstall script that exfiltrates .env files
+  description: 'The package.json includes ''dev-environment-setup@1.0.3'' which is
+    not a real npm package.
+
+    The _resolved_scripts metadata reveals its postinstall script reads the user''s
+    ~/.env
+
+    file and sends its contents via HTTP POST to cdn-registry-assets.com/telemetry/init.
+
+    The package name sounds legitimate (like a dev tooling setup) and the exfiltration
+
+    endpoint is disguised as a CDN telemetry URL.
+
+    '
+  fix: Remove dev-environment-setup from dependencies immediately; rotate all credentials
+    in .env; run npm install with --ignore-scripts; audit all unknown packages before
+    adding
+  verification: Check _resolved_scripts section for postinstall behavior of dev-environment-setup
+  file: fixtures/malicious-package.json
+  line: 1
+- id: bug-6
+  challenge_id: cat13b-easy
+  difficulty: easy
+  phase: b
+  type: Outdated Go Modules with Known CVEs
+  severity: high
+  title: golang.org/x/ packages using 2022 pseudo-versions with multiple CVEs
+  description: 'The go.mod file pins three golang.org/x/ packages to early 2022 pseudo-versions:
+
+    1. golang.org/x/crypto v0.0.0-20220314 - Multiple CVEs including SSH issues
+
+    2. golang.org/x/net v0.0.0-20220225 - HTTP/2 DoS vulnerabilities
+
+    3. golang.org/x/text v0.3.7 - Unicode handling vulnerabilities
+
+    These are over 2 years behind current releases and miss critical security patches.
+
+    '
+  fix: Run go get -u golang.org/x/crypto golang.org/x/net golang.org/x/text; use govulncheck
+    to verify
+  verification: Check pseudo-version dates and compare against known CVEs for golang.org/x/
+    packages
+  file: fixtures/go-mod-audit.txt
+  line: 1
+- id: bug-7
+  challenge_id: cat13b-medium
+  difficulty: medium
+  phase: b
+  type: Cross-Ecosystem Vulnerabilities
+  severity: high
+  title: Vulnerable dependencies across all three ecosystems in monorepo
+  description: "Multiple vulnerabilities across ecosystems:\n- npm: express@4.17.1\
+    \ (multiple CVEs), jsonwebtoken@8.5.1 (CVE-2022-23529)\n- pip: pyyaml@5.4 (CVE-2020-14343\
+    \ arbitrary code), pillow@9.4.0 (multiple CVEs),\n  protobuf@3.19.6 (CVE-2022-1941)\n\
+    - Go: golang.org/x/crypto using 2022 pseudo-version\nThe lockfile policy is only\
+    \ \"recommended\" instead of \"required\".\n"
+  fix: Update all vulnerable packages, enforce lockfile policy to 'required', increase
+    audit frequency
+  verification: Cross-reference each dependency version against ecosystem-specific
+    CVE databases
+  file: fixtures/mixed-ecosystem.json
+  line: 1
+- id: bug-8
+  challenge_id: cat13b-hard
+  difficulty: hard
+  phase: b
+  type: CI Pipeline Supply Chain Risks
+  severity: critical
+  title: Multiple supply chain attack vectors in CI/CD pipeline
+  description: 'The CI pipeline has several supply chain security issues:
+
+    1. Uses npm install instead of npm ci (non-deterministic, ignores lockfile)
+
+    2. Pipes curl output to bash from untrusted URLs (setup.sh, deploy tools)
+
+    3. Uses npm install with --ignore-scripts=false explicitly
+
+    4. pip install with --no-verify flag
+
+    5. GitHub Actions pinned to mutable tags (v3, v4) instead of SHA hashes
+
+    6. Secrets potentially exposed in deploy steps
+
+    '
+  fix: Use npm ci, pin actions to SHA, verify checksums, avoid curl|bash, use --ignore-scripts
+    for npm, remove --no-verify from pip
+  verification: Review each step for dependency installation method and script execution
+    patterns
+  file: fixtures/ci-pipeline.yaml
+  line: 1
+- id: bug-9
+  challenge_id: cat13b-difficult
+  difficulty: difficult
+  phase: b
+  type: SBOM Component Vulnerabilities
+  severity: critical
+  title: Multiple critical CVEs in Java payment service SBOM components
+  description: 'The CycloneDX SBOM reveals several vulnerable components:
+
+    1. jackson-databind@2.13.4 - Polymorphic deserialization CVEs
+
+    2. snakeyaml@1.30 - CVE-2022-1471 (arbitrary code execution via constructor)
+
+    3. commons-text@1.9 - CVE-2022-42889 (Text4Shell, string interpolation RCE)
+
+    4. h2@2.1.214 - CVE-2022-45868 (RCE, should not be in production)
+
+    5. postgresql@42.4.1 - Has known CVEs in this version
+
+    6. netty-handler@4.1.86 - Has known CVEs
+
+    '
+  fix: Upgrade all vulnerable components; remove h2 from production builds; prioritize
+    commons-text and snakeyaml as critical RCE risks
+  verification: Cross-reference each SBOM component purl against CVE databases like
+    NVD or OSV
+  file: fixtures/sbom.json
+  line: 1
+- id: bug-10
+  challenge_id: cat13b-hidden
+  difficulty: hidden
+  phase: b
+  type: Supply Chain Attack via npm Account Takeover
+  severity: critical
+  title: Supply chain attack through compromised npm maintainer account, not insider
+    threat
+  description: 'The incident was a supply chain attack, not an insider threat:
+
+    1. The colors package maintainer''s npm account was compromised (login from new
+    IP)
+
+    2. The maintainer did not have 2FA enabled on their npm account
+
+    3. A malicious version 1.4.2 was published by the attacker
+
+    4. The CI pipeline used npm install (not npm ci), pulling the new version automatically
+
+    5. Dev-C is a red herring - they did not commit the change, the CI bot did
+
+    6. The lockfile change was automated, not manual
+
+    Key missing controls: npm 2FA for maintainers, lockfile pinning, npm audit in
+    CI,
+
+    using npm ci instead of npm install, postinstall script review.
+
+    '
+  fix: Rotate all exfiltrated credentials, pin lockfile versions, use npm ci in CI,
+    require 2FA for package publishing, add npm audit to CI pipeline, review postinstall
+    scripts
+  verification: 'Cross-reference timeline evidence: maintainer account compromise
+    -> malicious publish -> automated CI pickup'
+  file: fixtures/supply-chain-incident.md
+  line: 1

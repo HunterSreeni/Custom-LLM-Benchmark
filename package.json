@@ -1,0 +1,21 @@
+{
+  "name": "sreeni-bench",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Custom LLM benchmarking suite - real-world security, coding, QA, and agentic testing",
+  "author": "Sreenivasan S (Sreeni)",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "bench": "pnpm --filter @sreeni-bench/runner start",
+    "audit:phase1": "pnpm --filter @sreeni-bench/audit run phase1",
+    "audit:phase2": "pnpm --filter @sreeni-bench/audit run phase2",
+    "audit:phase3": "pnpm --filter @sreeni-bench/audit run phase3",
+    "audit:phase4": "pnpm --filter @sreeni-bench/audit run phase4"
+  }
+}

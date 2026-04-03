@@ -1,0 +1,19 @@
+category_id: 5
+total_bugs: 2
+
+bugs:
+  - id: "contradictory-spec"
+    difficulty: "hidden"
+    file: "fixtures/contradictory-spec.md"
+    line: 1
+    description: "Spec contains contradictory requirements - 'modal should close when clicking outside' AND 'clicking outside should not dismiss unsaved changes'. These directly conflict when the form is dirty and closeOnBackdrop is true."
+    type: "spec-contradiction"
+    verification: "Read the 'Opening and Closing' section (close on backdrop click) vs the 'Form Integration' section (do not dismiss with unsaved changes). Both describe backdrop click behavior with opposite outcomes."
+
+  - id: "silent-behavior-change"
+    difficulty: "hidden"
+    file: "fixtures/refactor-target.ts"
+    line: 58
+    description: "The code uses loose equality 'if (conn == null)' which catches both null and undefined. A naive refactoring to strict equality '=== null' would miss undefined values, silently changing behavior in releaseConnection, executeQuery, processResults, and cleanupPool."
+    type: "semantic-change"
+    verification: "Search for '== null' in refactor-target.ts - found on lines 58, 66, 88, 112. All use loose equality intentionally to handle both null and undefined. Refactoring to === null breaks undefined handling."

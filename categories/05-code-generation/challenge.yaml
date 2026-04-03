@@ -1,0 +1,600 @@
+category:
+  id: 5
+  name: "Code Generation & Refactoring"
+  slug: "code-generation"
+  type: "3-phase"
+  tech_stack: ["Vue 3", "Vite", "Tailwind CSS", "TypeScript", "Pinia", "Vue Router", "Node.js", "React"]
+
+phases:
+  - id: "a"
+    name: "Code Generation"
+    challenges:
+      - id: "cat5a-easy"
+        difficulty: "easy"
+        title: "Filterable Sortable Data Table"
+        description: "Build a Vue 3 data table component with filtering, sorting, and Tailwind styling"
+        prompt: |
+          Read the specification in fixtures/data-table-spec.md carefully.
+          Build a fully functional, filterable, sortable data table as a Vue 3 component using
+          the Composition API, TypeScript, and Tailwind CSS for styling.
+
+          The component must meet ALL requirements listed in the spec. Return the complete
+          source code for all files needed.
+        source_files:
+          - "fixtures/data-table-spec.md"
+        expected_findings:
+          - id: "vue3-composition-api"
+            description: "Uses Vue 3 Composition API with TypeScript"
+            required: true
+            points: 2
+          - id: "column-sorting"
+            description: "Implements column sorting with direction toggle"
+            required: true
+            points: 2
+          - id: "text-filter"
+            description: "Implements text filter/search"
+            required: true
+            points: 2
+          - id: "pagination"
+            description: "Implements pagination"
+            required: true
+            points: 2
+          - id: "tailwind-styling"
+            description: "Uses Tailwind CSS classes for styling"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Uses Vue 3 Composition API with TypeScript"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["defineComponent", "setup", "ref", "computed", "script setup", "defineProps"]
+            - name: "Implements column sorting with direction toggle"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["sort", "ascending", "descending", "sortBy", "sortDirection"]
+            - name: "Implements text filter/search"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["filter", "search", "v-model", "computed"]
+            - name: "Implements pagination"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["page", "pageSize", "pagination", "currentPage"]
+            - name: "Uses Tailwind CSS classes for styling"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["bg-", "text-", "border", "rounded", "px-", "py-"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Generates code using Options API when spec requires Composition API"
+          - flag: "-I"
+            condition: "Ignores spec requirements like pagination or empty state"
+
+      - id: "cat5a-medium"
+        difficulty: "medium"
+        title: "JWT Auth Flow with Vue Router Guards"
+        description: "Build JWT authentication with refresh tokens, Vue Router guards, and Pinia store"
+        prompt: |
+          Read the specification in fixtures/auth-flow-spec.md carefully.
+          Build a complete JWT authentication flow with:
+          - Pinia auth store managing tokens
+          - Automatic refresh token rotation
+          - Vue Router navigation guards
+          - Login/logout functionality
+
+          Return the complete source code for all files needed.
+        source_files:
+          - "fixtures/auth-flow-spec.md"
+        expected_findings:
+          - id: "pinia-store"
+            description: "Pinia store with token management"
+            required: true
+            points: 2
+          - id: "refresh-rotation"
+            description: "Refresh token rotation logic"
+            required: true
+            points: 3
+          - id: "router-guard"
+            description: "Vue Router beforeEach guard"
+            required: true
+            points: 2
+          - id: "secure-storage"
+            description: "Secure token storage strategy"
+            required: false
+            points: 2
+          - id: "edge-cases"
+            description: "Handles edge cases like expired tokens and concurrent refresh"
+            required: false
+            points: 1
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Pinia store with token management"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["defineStore", "accessToken", "refreshToken", "Pinia"]
+            - name: "Refresh token rotation logic"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["refresh", "interceptor", "401", "retry", "rotate"]
+            - name: "Vue Router beforeEach guard"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["beforeEach", "meta", "requiresAuth", "router.push"]
+            - name: "Secure token storage strategy"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["httpOnly", "localStorage", "memory", "cookie"]
+            - name: "Handles edge cases (expired, concurrent refresh)"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["queue", "concurrent", "expired", "isRefreshing"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims the implementation handles XSS-safe storage but stores tokens in localStorage without disclaimer"
+          - flag: "-I"
+            condition: "Ignores refresh token rotation requirement"
+
+      - id: "cat5a-hard"
+        difficulty: "hard"
+        title: "Real-time Analytics Dashboard"
+        description: "Build a real-time analytics dashboard with WebSocket data feed and chart components"
+        prompt: |
+          Read the specification in fixtures/dashboard-spec.md carefully.
+          Build a real-time analytics dashboard with:
+          - WebSocket connection for live data
+          - Multiple chart types (line, bar, pie)
+          - Time range selector
+          - Auto-reconnect on disconnect
+
+          Return the complete source code for all files needed.
+        source_files:
+          - "fixtures/dashboard-spec.md"
+        expected_findings:
+          - id: "websocket-reconnect"
+            description: "WebSocket composable with auto-reconnect"
+            required: true
+            points: 3
+          - id: "chart-components"
+            description: "Multiple chart components (line, bar, pie)"
+            required: true
+            points: 2
+          - id: "time-range"
+            description: "Time range filtering"
+            required: true
+            points: 2
+          - id: "reactive-pipeline"
+            description: "Reactive data pipeline from WebSocket to charts"
+            required: false
+            points: 2
+          - id: "connection-status"
+            description: "Connection status indicator"
+            required: false
+            points: 1
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "WebSocket composable with auto-reconnect"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["WebSocket", "reconnect", "onclose", "composable", "useWebSocket"]
+            - name: "Multiple chart components"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["chart", "line", "bar", "pie", "canvas"]
+            - name: "Time range filtering"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["timeRange", "1h", "24h", "7d", "filter"]
+            - name: "Reactive data pipeline from WS to charts"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["watch", "computed", "reactive", "ref", "onMessage"]
+            - name: "Connection status indicator"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["status", "connected", "disconnected", "connecting"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims WebSocket auto-reconnect works but implementation has no backoff strategy"
+          - flag: "-I"
+            condition: "Ignores requirement for connection status display"
+
+      - id: "cat5a-difficult"
+        difficulty: "difficult"
+        title: "Drag-and-Drop Kanban Board"
+        description: "Build a Kanban board with drag-and-drop, optimistic updates, and undo/redo"
+        prompt: |
+          Read the specification in fixtures/kanban-spec.md carefully.
+          Build a drag-and-drop Kanban board with:
+          - Column-based card layout with drag between columns
+          - Optimistic updates with server sync
+          - Full undo/redo history stack
+          - Keyboard accessibility
+
+          Return the complete source code for all files needed.
+        source_files:
+          - "fixtures/kanban-spec.md"
+        expected_findings:
+          - id: "drag-drop"
+            description: "Drag-and-drop implementation"
+            required: true
+            points: 2
+          - id: "optimistic-update"
+            description: "Optimistic update with rollback on failure"
+            required: true
+            points: 3
+          - id: "undo-redo"
+            description: "Undo/redo history stack"
+            required: true
+            points: 3
+          - id: "keyboard-a11y"
+            description: "Keyboard accessibility"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Drag-and-drop implementation"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["dragstart", "dragover", "drop", "draggable", "dataTransfer"]
+            - name: "Optimistic update with rollback on failure"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["optimistic", "rollback", "revert", "previousState", "catch"]
+            - name: "Undo/redo history stack"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["undo", "redo", "history", "stack", "push", "pop"]
+            - name: "Keyboard accessibility"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["aria", "role", "tabindex", "keydown", "keyboard"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims accessibility compliance but missing ARIA attributes"
+          - flag: "-I"
+            condition: "Ignores undo/redo requirement"
+
+      - id: "cat5a-hidden"
+        difficulty: "hidden"
+        title: "Contradictory Specification Detection"
+        description: "Spec contains contradictory requirements - does the LLM flag the conflict?"
+        prompt: |
+          Read the specification in fixtures/contradictory-spec.md carefully.
+          Implement a modal dialog component following ALL requirements in the spec exactly.
+
+          If any requirements are unclear or conflicting, note them before proceeding.
+
+          Return the complete source code for all files needed.
+        source_files:
+          - "fixtures/contradictory-spec.md"
+        expected_findings:
+          - id: "identifies-contradiction"
+            description: "Identifies the contradiction between dismiss-on-outside-click and unsaved-changes protection"
+            required: true
+            points: 5
+          - id: "proposes-resolution"
+            description: "Proposes a resolution strategy"
+            required: true
+            points: 3
+          - id: "working-implementation"
+            description: "Still provides working implementation"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies the contradiction between dismiss-on-outside-click and unsaved-changes protection"
+              points: 5
+              match_type: "keyword"
+              match_terms: ["contradict", "conflict", "ambiguous", "inconsistent", "unclear"]
+            - name: "Proposes a resolution strategy"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["suggest", "resolve", "approach", "if dirty", "unsaved", "confirm"]
+            - name: "Still provides working implementation"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["defineComponent", "setup", "template", "modal", "dialog"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Implements both contradictory requirements without acknowledging the conflict"
+          - flag: "-I"
+            condition: "Ignores the instruction to note unclear or conflicting requirements"
+
+  - id: "b"
+    name: "Refactoring"
+    challenges:
+      - id: "cat5b-easy"
+        difficulty: "easy"
+        title: "Callback to Async/Await Migration"
+        description: "Migrate a callback-heavy Node.js module to async/await"
+        prompt: |
+          Refactor the code in fixtures/callback-module.js from nested callbacks to
+          modern async/await syntax. The refactored code must:
+          1. Preserve all existing behavior exactly
+          2. Use async/await instead of callbacks
+          3. Add proper error handling with try/catch
+          4. Maintain the same function signatures (or return Promises instead of accepting callbacks)
+
+          Return the complete refactored code.
+        source_files:
+          - "fixtures/callback-module.js"
+        expected_findings:
+          - id: "async-await"
+            description: "Converts all callbacks to async/await"
+            required: true
+            points: 3
+          - id: "error-handling"
+            description: "Proper try/catch error handling"
+            required: true
+            points: 3
+          - id: "preserves-behavior"
+            description: "Preserves original behavior"
+            required: true
+            points: 2
+          - id: "clean-structure"
+            description: "Clean code structure"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Converts all callbacks to async/await"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["async", "await", "Promise"]
+            - name: "Proper try/catch error handling"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["try", "catch", "throw", "Error"]
+            - name: "Preserves original behavior"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["readFile", "writeFile", "parse", "stringify"]
+            - name: "Clean code structure"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["const", "return", "export"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims refactored code is equivalent but changes behavior"
+          - flag: "-I"
+            condition: "Does not convert all callbacks"
+
+      - id: "cat5b-medium"
+        difficulty: "medium"
+        title: "React Class to Hooks Migration"
+        description: "Convert a React class component to functional component with hooks"
+        prompt: |
+          Refactor the React class component in fixtures/class-component.tsx to a
+          functional component using hooks. The refactored code must:
+          1. Replace all lifecycle methods with appropriate hooks
+          2. Convert class state to useState/useReducer
+          3. Convert refs to useRef
+          4. Preserve all existing behavior exactly
+          5. Use TypeScript throughout
+
+          Return the complete refactored code.
+        source_files:
+          - "fixtures/class-component.tsx"
+        expected_findings:
+          - id: "usestate"
+            description: "Converts state to useState"
+            required: true
+            points: 2
+          - id: "useeffect"
+            description: "Converts lifecycle to useEffect"
+            required: true
+            points: 3
+          - id: "useref"
+            description: "Converts refs to useRef"
+            required: true
+            points: 2
+          - id: "typescript"
+            description: "Preserves TypeScript types"
+            required: false
+            points: 2
+          - id: "no-class"
+            description: "Removes class syntax entirely"
+            required: false
+            points: 1
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Converts state to useState"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["useState", "set"]
+            - name: "Converts lifecycle to useEffect"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["useEffect", "cleanup", "return", "dependency"]
+            - name: "Converts refs to useRef"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["useRef", "current"]
+            - name: "Preserves TypeScript types"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["interface", "Props", "type", "React.FC"]
+            - name: "Removes class syntax entirely"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["function", "const", "=>"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims equivalent behavior but drops functionality"
+          - flag: "-I"
+            condition: "Keeps class syntax in the refactored output"
+
+      - id: "cat5b-hard"
+        difficulty: "hard"
+        title: "API v1 to v2 Migration"
+        description: "Migrate code from API v1 to v2 following a migration guide"
+        prompt: |
+          Migrate the code in fixtures/api-v1-code.ts from API v1 to v2, following the
+          migration guide in fixtures/api-v2-migration-guide.md.
+
+          The migrated code must:
+          1. Follow ALL migration steps in the guide
+          2. Update all deprecated method calls
+          3. Handle the new error response format
+          4. Update type definitions to match v2 schemas
+
+          Return the complete migrated code.
+        source_files:
+          - "fixtures/api-v1-code.ts"
+          - "fixtures/api-v2-migration-guide.md"
+        expected_findings:
+          - id: "deprecated-methods"
+            description: "Updates all deprecated method calls"
+            required: true
+            points: 3
+          - id: "error-format"
+            description: "Handles new error response format"
+            required: true
+            points: 3
+          - id: "type-updates"
+            description: "Updates type definitions"
+            required: true
+            points: 2
+          - id: "migration-guide"
+            description: "Follows migration guide completely"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Updates all deprecated method calls"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["v2", "fetch", "create", "update", "listItems"]
+            - name: "Handles new error response format"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["errors", "code", "ApiError", "error.code"]
+            - name: "Updates type definitions"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["interface", "type", "createdAt", "updatedAt"]
+            - name: "Follows migration guide completely"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["pagination", "cursor", "nextCursor"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims migration is complete but misses deprecated methods"
+          - flag: "-I"
+            condition: "Ignores migration guide steps"
+
+      - id: "cat5b-difficult"
+        difficulty: "difficult"
+        title: "Vue 2 Options API to Vue 3 Composition API"
+        description: "Upgrade a Vue 2 component with mixins, filters, and event bus to Vue 3 Composition API"
+        prompt: |
+          Migrate the Vue 2 Options API component in fixtures/vue2-component.vue to
+          Vue 3 Composition API. The migrated code must:
+          1. Replace mixins with composables
+          2. Replace filters with computed properties or methods
+          3. Replace event bus ($on/$emit) with provide/inject or a composable
+          4. Use script setup syntax
+          5. Preserve all existing behavior
+
+          Return the complete migrated code plus any new composable files.
+        source_files:
+          - "fixtures/vue2-component.vue"
+        expected_findings:
+          - id: "composables"
+            description: "Converts mixins to composables"
+            required: true
+            points: 3
+          - id: "filters-replaced"
+            description: "Replaces filters with computed/methods"
+            required: true
+            points: 2
+          - id: "event-bus"
+            description: "Replaces event bus pattern"
+            required: true
+            points: 3
+          - id: "script-setup"
+            description: "Uses script setup syntax"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Converts mixins to composables"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["composable", "use", "export function"]
+            - name: "Replaces filters with computed/methods"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["computed", "format", "function"]
+            - name: "Replaces event bus pattern"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["provide", "inject", "mitt", "emitter", "useEventBus"]
+            - name: "Uses script setup syntax"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["script setup", "defineProps", "defineEmits"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims Vue 3 equivalent but uses deprecated Vue 2 syntax"
+          - flag: "-I"
+            condition: "Ignores mixin conversion requirement"
+
+      - id: "cat5b-hidden"
+        difficulty: "hidden"
+        title: "Silent Behavior Change Detection"
+        description: "Refactoring introduces a subtle behavior change - does the LLM catch it?"
+        prompt: |
+          Refactor the TypeScript code in fixtures/refactor-target.ts to improve
+          code quality and readability. Apply modern TypeScript best practices.
+
+          Important: Ensure the refactored code preserves ALL existing behavior,
+          including edge cases. If you notice any places where refactoring could
+          accidentally change behavior, flag them explicitly.
+
+          Return the complete refactored code with any behavioral notes.
+        source_files:
+          - "fixtures/refactor-target.ts"
+        expected_findings:
+          - id: "loose-equality"
+            description: "Identifies the == null vs === null behavior difference"
+            required: true
+            points: 5
+          - id: "preserves-loose"
+            description: "Preserves the loose equality check intentionally"
+            required: true
+            points: 3
+          - id: "code-quality"
+            description: "Code quality improvements applied"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies the == null vs === null behavior difference"
+              points: 5
+              match_type: "keyword"
+              match_terms: ["undefined", "null", "loose equality", "strict equality", "== null", "=== null"]
+            - name: "Preserves the loose equality check intentionally"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["both null and undefined", "nullish", "coalescing", "== null"]
+            - name: "Code quality improvements applied"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["const", "readonly", "interface", "type"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims behavior is preserved but silently changes == null to === null"
+          - flag: "-I"
+            condition: "Ignores instruction to flag places where behavior could change"

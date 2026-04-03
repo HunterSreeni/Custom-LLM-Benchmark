@@ -1,0 +1,162 @@
+diff --git a/src/middleware/auth.middleware.ts b/src/middleware/auth.middleware.ts
+index 4a2e8f1..b7c3d92 100644
+--- a/src/middleware/auth.middleware.ts
++++ b/src/middleware/auth.middleware.ts
+@@ -1,6 +1,7 @@
+ import { Request, Response, NextFunction } from 'express';
+ import { verifyToken } from '../utils/jwt';
+ import { SessionStore } from '../stores/session.store';
++import { RateLimiter } from '../utils/rate-limiter';
+
+ const sessionStore = new SessionStore();
+
+@@ -8,6 +9,8 @@ export interface AuthOptions {
+   requireRole?: string[];
+   allowExpiredGrace?: boolean;
++  rateLimitWindow?: number;   // seconds, default 900
++  rateLimitMax?: number;      // max attempts, default 100
+ }
+
+ export function authMiddleware(options: AuthOptions = {}) {
+@@ -15,6 +18,18 @@ export function authMiddleware(options: AuthOptions = {}) {
+   return async (req: Request, res: Response, next: NextFunction) => {
+     const token = req.headers.authorization?.replace('Bearer ', '');
+
++    // --- Rate limiting ---
++    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
++    const limiter = RateLimiter.getInstance();
++    const windowSec = options.rateLimitWindow ?? 900;
++    const maxAttempts = options.rateLimitMax ?? 100;
++
++    if (!limiter.isAllowed(clientIp, windowSec, maxAttempts)) {
++      return res.status(429).json({
++        error: 'Too many requests. Please try again later.',
++        retryAfter: limiter.getRetryAfter(clientIp, windowSec),
++      });
++    }
++
+     if (!token) {
+       return res.status(401).json({ error: 'Authentication required' });
+     }
+@@ -30,6 +45,9 @@ export function authMiddleware(options: AuthOptions = {}) {
+       return res.status(403).json({ error: 'Insufficient permissions' });
+     }
+
++    // Record successful auth for rate-limit tracking
++    limiter.recordSuccess(clientIp);
++
+     req.user = payload;
+     next();
+   };
+diff --git a/src/utils/rate-limiter.ts b/src/utils/rate-limiter.ts
+new file mode 100644
+index 0000000..e5f8a21
+--- /dev/null
++++ b/src/utils/rate-limiter.ts
+@@ -0,0 +1,68 @@
++interface ClientRecord {
++  attempts: number;
++  firstAttempt: number;   // epoch ms
++  lastAttempt: number;
++  blocked: boolean;
++}
++
++export class RateLimiter {
++  private static instance: RateLimiter;
++  private clients: Map<string, ClientRecord> = new Map();
++
++  private constructor() {}
++
++  static getInstance(): RateLimiter {
++    if (!RateLimiter.instance) {
++      RateLimiter.instance = new RateLimiter();
++    }
++    return RateLimiter.instance;
++  }
++
++  isAllowed(clientId: string, windowSec: number, maxAttempts: number): boolean {
++    const now = Date.now();
++    const record = this.clients.get(clientId);
++
++    if (!record) {
++      this.clients.set(clientId, {
++        attempts: 1,
++        firstAttempt: now,
++        lastAttempt: now,
++        blocked: false,
++      });
++      return true;
++    }
++
++    // Reset window if expired
++    if (now - record.firstAttempt > windowSec * 1000) {
++      record.attempts = 1;
++      record.firstAttempt = now;
++      record.lastAttempt = now;
++      record.blocked = false;
++      return true;
++    }
++
++    record.attempts += 1;
++    record.lastAttempt = now;
++
++    if (record.attempts > maxAttempts) {
++      record.blocked = true;
++      return false;
++    }
++
++    return true;
++  }
++
++  getRetryAfter(clientId: string, windowSec: number): number {
++    const record = this.clients.get(clientId);
++    if (!record) return 0;
++    const elapsed = (Date.now() - record.firstAttempt) / 1000;
++    return Math.max(0, Math.ceil(windowSec - elapsed));
++  }
++
++  recordSuccess(clientId: string): void {
++    const record = this.clients.get(clientId);
++    if (record) {
++      record.attempts = Math.max(0, record.attempts - 1);
++    }
++  }
++}
+diff --git a/src/stores/session.store.ts b/src/stores/session.store.ts
+index 8d1a3e2..c4f9e77 100644
+--- a/src/stores/session.store.ts
++++ b/src/stores/session.store.ts
+@@ -1,4 +1,5 @@
+ import { Redis } from 'ioredis';
++import { RateLimiter } from '../utils/rate-limiter';
+
+ export interface Session {
+   userId: string;
+@@ -6,6 +7,7 @@ export interface Session {
+   createdAt: number;
+   expiresAt: number;
+   ip: string;
++  rateLimitBucket?: string;
+ }
+
+ export class SessionStore {
+@@ -35,6 +37,15 @@ export class SessionStore {
+     await this.redis.del(`session:${sessionId}`);
+   }
+
++  async destroyAllForUser(userId: string): Promise<void> {
++    const keys = await this.redis.keys(`session:*`);
++    for (const key of keys) {
++      const data = await this.redis.get(key);
++      if (data) {
++        const session: Session = JSON.parse(data);
++        if (session.userId === userId) {
++          await this.redis.del(key);
++        }
++      }
++    }
++  }
++
+   async refresh(sessionId: string, ttlSeconds: number = 3600): Promise<void> {
+     const session = await this.get(sessionId);
+     if (session) {

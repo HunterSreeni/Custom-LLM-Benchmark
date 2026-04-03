@@ -1,0 +1,117 @@
+safeapp@1.0.0
++-- fastify@4.23.2
+|   +-- @fastify/ajv-compiler@3.5.0
+|   |   +-- ajv@8.12.0
+|   |   |   +-- fast-deep-equal@3.1.3
+|   |   |   +-- json-schema-traverse@1.0.0
+|   |   |   +-- require-from-string@2.0.2
+|   |   |   \-- uri-js@4.4.1
+|   |   |       \-- punycode@2.3.0
+|   |   \-- ajv-formats@2.1.1
+|   +-- @fastify/error@3.3.0
+|   +-- @fastify/fast-json-stringify-compiler@4.3.0
+|   |   \-- fast-json-stringify@5.8.0
+|   |       +-- @fastify/deepmerge@1.3.0
+|   |       +-- ajv@8.12.0 (deduped)
+|   |       +-- ajv-formats@2.1.1 (deduped)
+|   |       \-- fast-deep-equal@3.1.3 (deduped)
+|   +-- abstract-logging@2.0.1
+|   +-- avvio@8.2.1
+|   |   +-- @fastify/error@3.3.0 (deduped)
+|   |   +-- archy@1.0.0
+|   |   +-- debug@4.3.4
+|   |   |   \-- ms@2.1.2
+|   |   \-- fastq@1.15.0
+|   |       \-- reusify@1.0.4
+|   +-- content-type@1.0.5
+|   +-- find-my-way@7.7.0
+|   |   +-- fast-deep-equal@3.1.3 (deduped)
+|   |   +-- fast-querystring@1.1.2
+|   |   |   \-- fast-decode-uri-component@1.0.1
+|   |   \-- safe-regex2@2.0.0
+|   |       \-- re2js@0.3.6
+|   +-- light-my-request@5.10.0
+|   |   +-- cookie@0.5.0
+|   |   \-- set-cookie-parser@2.6.0
+|   +-- pino@8.15.1 (deduped)
+|   +-- process-warning@2.2.0
+|   +-- proxy-addr@2.0.7
+|   |   +-- forwarded@0.2.0
+|   |   \-- ipaddr.js@1.9.1
+|   +-- rfdc@1.3.0
+|   +-- secure-json-parse@2.7.0
+|   +-- semver@7.5.4
+|   |   \-- lru-cache@6.0.0
+|   |       \-- yallist@4.0.0
+|   +-- toad-cache@3.3.0
+|   \-- on-exit-leak-free@2.1.0
++-- zod@3.22.2
++-- drizzle-orm@0.28.6
+|   +-- pg@8.11.3
+|   |   +-- buffer-writer@2.0.0
+|   |   +-- packet-reader@1.0.0
+|   |   +-- pg-connection-string@2.6.2
+|   |   +-- pg-pool@3.6.1
+|   |   +-- pg-protocol@1.6.0
+|   |   +-- pg-types@2.2.0
+|   |   |   +-- pg-int8@1.0.1
+|   |   |   +-- postgres-array@2.0.0
+|   |   |   +-- postgres-bytea@1.0.0
+|   |   |   +-- postgres-date@1.0.7
+|   |   |   \-- postgres-interval@1.2.0
+|   |   |       \-- xtend@4.0.2
+|   |   \-- pgpass@1.0.5
+|   |       \-- split2@4.2.0
+|   \-- sql-formatter@4.0.2
+|       \-- nearley@2.20.1
+|           +-- moo@0.5.2
+|           +-- commander@2.20.3
+|           \-- randexp@0.5.3
+|               +-- drange@1.1.1
+|               \-- ret@0.2.2
+|                   VULNERABILITY: ret@0.2.2 - ReDoS (Regular Expression
+|                   Denial of Service) - CVE-2020-28469 - CVSS 7.5
+|                   Affected: <0.3.0 - Fix: upgrade to ret@0.3.0+
++-- pino@8.15.1
+|   +-- atomic-sleep@1.0.0
+|   +-- fast-redact@3.3.0
+|   +-- on-exit-leak-free@2.1.0 (deduped)
+|   +-- pino-abstract-transport@1.1.0
+|   |   \-- readable-stream@4.4.2
+|   |       +-- abort-controller@3.0.0
+|   |       +-- buffer@6.0.3
+|   |       +-- events@3.3.0
+|   |       +-- process@0.11.10
+|   |       \-- string_decoder@1.3.0
+|   +-- pino-std-serializers@6.2.2
+|   +-- process-warning@2.2.0 (deduped)
+|   +-- quick-format-unescaped@4.0.4
+|   +-- real-require@0.2.0
+|   +-- safe-stable-stringify@2.4.3
+|   +-- sonic-boom@3.4.0
+|   |   \-- atomic-sleep@1.0.0 (deduped)
+|   \-- thread-stream@2.4.1
+|       \-- real-require@0.2.0 (deduped)
++-- dotenv@16.3.1
++-- vitest@0.34.6
+|   +-- @vitest/expect@0.34.6
+|   +-- @vitest/runner@0.34.6
+|   +-- @vitest/snapshot@0.34.6
+|   +-- @vitest/spy@0.34.6
+|   +-- @vitest/utils@0.34.6
+|   +-- acorn@8.10.0
+|   +-- acorn-walk@8.2.0
+|   +-- cac@6.7.14
+|   +-- chai@4.3.8
+|   +-- debug@4.3.4 (deduped)
+|   +-- local-pkg@0.4.3
+|   +-- magic-string@0.30.3
+|   +-- pathe@1.1.1
+|   +-- picocolors@1.0.0
+|   +-- std-env@3.4.3
+|   +-- strip-literal@1.3.0
+|   +-- tinybench@2.5.1
+|   +-- tinypool@0.7.0
+|   +-- vite@4.4.9
+|   \-- vite-node@0.34.6
+\-- typescript@5.2.2

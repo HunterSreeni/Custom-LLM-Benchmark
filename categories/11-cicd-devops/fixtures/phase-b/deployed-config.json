@@ -1,0 +1,83 @@
+{
+  "app": {
+    "name": "nexus-platform",
+    "version": "2.4.1",
+    "environment": "production",
+    "debug": true,
+    "verbose_errors": true,
+    "stack_traces": true
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "port": 3000,
+    "cors_origins": ["*"],
+    "trust_proxy": true
+  },
+  "database": {
+    "host": "db-prod-nexus.internal",
+    "port": 5432,
+    "name": "nexus_production",
+    "user": "nexus_app",
+    "password": "${DB_PASSWORD}",
+    "ssl": false,
+    "pool_size": 20,
+    "log_queries": true
+  },
+  "redis": {
+    "host": "redis-prod.internal",
+    "port": 6379,
+    "password": "${REDIS_PASSWORD}",
+    "tls": false
+  },
+  "auth": {
+    "jwt_secret": "${JWT_SECRET}",
+    "token_expiry": "7d",
+    "refresh_token_expiry": "30d",
+    "session_secret": "nexus-session-secret-2024"
+  },
+  "storage": {
+    "provider": "s3",
+    "bucket": "nexus-uploads-prod",
+    "region": "ap-south-1",
+    "access_key": "${AWS_ACCESS_KEY}",
+    "secret_key": "${AWS_SECRET_KEY}",
+    "public_url": "https://cdn.nexus-platform.com"
+  },
+  "email": {
+    "provider": "smtp",
+    "host": "smtp.nexus-platform.com",
+    "port": 587,
+    "user": "noreply@nexus-platform.com",
+    "password": "${SMTP_PASSWORD}"
+  },
+  "monitoring": {
+    "sentry_dsn": "https://abc123@o456.ingest.sentry.io/789",
+    "enable_profiling": true,
+    "sample_rate": 1.0
+  },
+  "features": {
+    "enable_debug_panel": true,
+    "enable_graphql_playground": true,
+    "enable_api_docs": true,
+    "source_maps": true,
+    "mock_payments": false
+  },
+  "endpoints": {
+    "health": "/health",
+    "metrics": "/metrics",
+    "debug": "/debug",
+    "debug_info": "/debug/info",
+    "debug_env": "/debug/env",
+    "debug_routes": "/debug/routes",
+    "debug_db": "/debug/db-status",
+    "graphql_playground": "/graphql",
+    "api_docs": "/api-docs",
+    "swagger": "/swagger.json"
+  },
+  "build": {
+    "source_maps": true,
+    "minify": true,
+    "bundle_analyzer": false,
+    "env_file": ".env.production"
+  }
+}

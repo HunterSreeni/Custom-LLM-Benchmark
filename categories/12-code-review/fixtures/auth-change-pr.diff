@@ -1,0 +1,108 @@
+diff --git a/src/auth/middleware.ts b/src/auth/middleware.ts
+index 3a4b5c6..7d8e9f0 100644
+--- a/src/auth/middleware.ts
++++ b/src/auth/middleware.ts
+@@ -1,45 +1,62 @@
+ import { Request, Response, NextFunction } from 'express';
+-import jwt from 'jsonwebtoken';
++import jwt, { JwtPayload } from 'jsonwebtoken';
+ import { config } from '../config';
++import { UserRepository } from '../repositories/UserRepository';
+
+-const PUBLIC_KEY = config.auth.rsaPublicKey;
++const SECRET = config.auth.jwtSecret;
++const userRepo = new UserRepository();
+
+-export function verifyToken(req: Request, res: Response, next: NextFunction) {
++export async function verifyToken(req: Request, res: Response, next: NextFunction) {
+   const token = extractToken(req);
+   if (!token) {
+     return res.status(401).json({ error: 'No token provided' });
+   }
+
+   try {
+-    const payload = jwt.verify(token, PUBLIC_KEY, {
+-      algorithms: ['RS256'],
+-      issuer: 'auth.acme.com',
+-      audience: 'api.acme.com',
+-    }) as JwtPayload;
++    const payload = jwt.verify(token, SECRET) as JwtPayload;
++
++    // Fetch fresh user data
++    const user = await userRepo.findById(payload.sub!);
++    if (!user) {
++      return res.status(401).json({ error: 'User not found' });
++    }
+
+-    req.user = {
+-      id: payload.sub!,
+-      role: payload.role,
+-      permissions: payload.permissions || [],
+-    };
++    req.user = { id: user.id, role: user.role, permissions: user.permissions };
+     next();
+   } catch (err) {
+     return res.status(401).json({ error: 'Invalid token' });
+   }
+ }
+
+-export function requirePermission(permission: string) {
++export function requireRole(role: string) {
+   return (req: Request, res: Response, next: NextFunction) => {
+-    if (!req.user?.permissions?.includes(permission)) {
++    if (!req.user) {
++      return res.status(401).json({ error: 'Not authenticated' });
++    }
++    // Allow admins or users with matching role
++    if (req.user.role === 'admin' || req.user.role === role) {
++      return next();
++    }
++    return res.status(403).json({ error: 'Forbidden' });
++  };
++}
++
++export function requireAnyRole(...roles: string[]) {
++  return (req: Request, res: Response, next: NextFunction) => {
++    if (!req.user) {
++      return res.status(401).json({ error: 'Not authenticated' });
++    }
++    if (!roles.some(r => r === req.user!.role || req.user!.role === 'admin')) {
+       return res.status(403).json({ error: 'Forbidden' });
+     }
+     next();
+   };
+ }
+
+ function extractToken(req: Request): string | null {
+   const authHeader = req.headers.authorization;
+   if (authHeader?.startsWith('Bearer ')) {
+     return authHeader.slice(7);
+   }
++  // Also check query string for API clients
++  if (req.query.token) {
++    return req.query.token as string;
++  }
+   return null;
+ }
+
+diff --git a/src/routes/admin.ts b/src/routes/admin.ts
+index 5b6c7d8..9a0b1c2 100644
+--- a/src/routes/admin.ts
++++ b/src/routes/admin.ts
+@@ -1,12 +1,12 @@
+ import { Router } from 'express';
+-import { verifyToken, requirePermission } from '../auth/middleware';
++import { verifyToken, requireRole, requireAnyRole } from '../auth/middleware';
+ import { AdminController } from '../controllers/AdminController';
+
+ const router = Router();
+ const admin = new AdminController();
+
+-router.get('/users', verifyToken, requirePermission('admin:users:read'), admin.listUsers);
+-router.delete('/users/:id', verifyToken, requirePermission('admin:users:delete'), admin.deleteUser);
+-router.get('/audit-log', verifyToken, requirePermission('admin:audit:read'), admin.getAuditLog);
++router.get('/users', verifyToken, requireAnyRole('admin', 'manager'), admin.listUsers);
++router.delete('/users/:id', verifyToken, requireRole('admin'), admin.deleteUser);
++router.get('/audit-log', verifyToken, requireAnyRole('admin', 'auditor'), admin.getAuditLog);
+
+ export default router;

@@ -1,0 +1,643 @@
+category:
+  id: 8
+  name: "Writing & Instruction Following"
+  slug: "writing"
+  type: "2-phase"
+  tech_stack: ["Markdown", "HackerOne", "MSRC", "Google VRP", "CVSS 3.1"]
+
+phases:
+  - id: "a"
+    name: "Blog Writing"
+    challenges:
+      - id: "cat8a-easy"
+        difficulty: "easy"
+        title: "AI Cybersecurity Blog Post"
+        description: "Write a blog post about AI in cybersecurity with specific format constraints"
+        prompt: |
+          Write a blog post about how AI is changing cybersecurity.
+
+          Requirements:
+          - 500-700 words
+          - Prose-only (no bullet points, no numbered lists, no headers besides the title)
+          - Conversational tone, as if explaining to a friend
+          - End with a thought-provoking question to the reader
+          - Include at least one concrete example of an AI tool used in security
+          - No em dashes - use regular hyphens only
+        source_files: []
+        expected_findings:
+          - id: "word-count"
+            description: "Within word count (500-700)"
+            required: true
+            points: 2
+          - id: "prose-only"
+            description: "Prose-only format (no bullet points or numbered lists)"
+            required: true
+            points: 2
+          - id: "conversational"
+            description: "Conversational tone"
+            required: true
+            points: 2
+          - id: "ends-question"
+            description: "Ends with a question"
+            required: true
+            points: 2
+          - id: "ai-tool-example"
+            description: "Includes concrete AI tool example"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Within word count (500-700)"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["AI", "cybersecurity", "security"]
+            - name: "Prose-only format (no bullet points or numbered lists)"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["paragraph", "prose"]
+            - name: "Conversational tone"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["you", "your", "think about", "imagine"]
+            - name: "Ends with a question"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["?"]
+            - name: "Includes concrete AI tool example"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["tool", "detect", "model", "neural", "GPT", "LLM"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Makes up fake statistics or tool names that don't exist"
+          - flag: "-I"
+            condition: "Uses bullet points, numbered lists, or exceeds word count"
+
+      - id: "cat8a-medium"
+        difficulty: "medium"
+        title: "RFC to Executive Summary"
+        description: "Rewrite a technical RFC for a non-technical CEO audience"
+        prompt: |
+          Read the technical RFC in fixtures/rfc-technical.md.
+
+          Rewrite it as a 300-500 word executive summary for a non-technical CEO.
+          Requirements:
+          - Replace all jargon with plain language
+          - Focus on business impact, cost, and timeline
+          - Include a clear recommendation (go/no-go)
+          - Use short paragraphs (3-4 sentences max)
+          - Maintain accuracy - do not change the technical facts, just the language
+        source_files:
+          - "fixtures/rfc-technical.md"
+        expected_findings:
+          - id: "jargon-removed"
+            description: "Removes or explains technical jargon"
+            required: true
+            points: 3
+          - id: "clear-recommendation"
+            description: "Includes clear recommendation"
+            required: true
+            points: 2
+          - id: "accuracy"
+            description: "Preserves technical accuracy"
+            required: true
+            points: 2
+          - id: "structure"
+            description: "Appropriate length and paragraph structure"
+            required: false
+            points: 2
+          - id: "next-steps"
+            description: "Actionable next steps"
+            required: false
+            points: 1
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Removes or explains technical jargon"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["business", "cost", "impact", "revenue", "customer"]
+            - name: "Includes clear recommendation"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["recommend", "suggest", "should", "proposal"]
+            - name: "Preserves technical accuracy"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["latency", "performance", "migration", "database"]
+            - name: "Appropriate length and paragraph structure"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["summary", "overview", "conclusion"]
+            - name: "Actionable next steps"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["next step", "timeline", "phase", "milestone"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Changes the technical facts or invents numbers not in the RFC"
+          - flag: "-I"
+            condition: "Keeps heavy technical jargon without explanation"
+
+      - id: "cat8a-hard"
+        difficulty: "hard"
+        title: "15-Rule Blog Post"
+        description: "Write a blog post following ALL 15 specific rules simultaneously"
+        prompt: |
+          Read the writing rules in fixtures/writing-rules.md carefully.
+
+          Write a blog post about "5 Lessons Anime Taught Me About Productivity"
+          following ALL 15 rules simultaneously. Every single rule must be followed.
+
+          After writing the post, include a checklist showing which rules you followed.
+        source_files:
+          - "fixtures/writing-rules.md"
+        expected_findings:
+          - id: "word-count"
+            description: "Follows word count rule"
+            required: true
+            points: 1
+          - id: "formatting"
+            description: "Follows formatting rules (prose-only, no em dashes)"
+            required: true
+            points: 2
+          - id: "seo"
+            description: "Follows SEO rules (keywords, meta description)"
+            required: true
+            points: 2
+          - id: "affiliate"
+            description: "Includes affiliate link placement"
+            required: true
+            points: 2
+          - id: "tone-ending"
+            description: "Follows tone and ending rules"
+            required: true
+            points: 2
+          - id: "checklist"
+            description: "Includes self-assessment checklist"
+            required: false
+            points: 1
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Follows word count rule (500-700 words)"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["anime", "productivity", "lesson"]
+            - name: "Follows formatting rules (prose-only, no em dashes)"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["paragraph"]
+            - name: "Follows SEO rules (keywords, meta description)"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["keyword", "SEO", "meta"]
+            - name: "Includes affiliate link placement"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["amazon", "affiliate", "amzn", "huntersreen05-21"]
+            - name: "Follows tone and ending rules"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["?", "conversational", "question"]
+            - name: "Includes self-assessment checklist"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["checklist", "rule", "followed"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims to follow all rules but demonstrably breaks some"
+          - flag: "-I"
+            condition: "Skips rules without acknowledging them"
+
+      - id: "cat8a-difficult"
+        difficulty: "difficult"
+        title: "Twitter Thread to Blog Post"
+        description: "Expand a messy Twitter thread into a polished Medium blog post"
+        prompt: |
+          Read the Twitter thread in fixtures/twitter-thread.md.
+
+          Expand this into a polished Medium blog post (600-800 words).
+          Requirements:
+          - Fix all grammar, spelling, and broken abbreviations
+          - Expand abbreviated points into full paragraphs
+          - Maintain the original voice and personality
+          - Add smooth transitions between points
+          - Remove emoji-heavy style but keep the energy
+          - Add a proper title and subtitle
+          - End with a call-to-action
+        source_files:
+          - "fixtures/twitter-thread.md"
+        expected_findings:
+          - id: "grammar-fix"
+            description: "Fixes grammar and abbreviations"
+            required: true
+            points: 2
+          - id: "expands-points"
+            description: "Expands abbreviated points into paragraphs"
+            required: true
+            points: 2
+          - id: "original-voice"
+            description: "Maintains original voice"
+            required: true
+            points: 2
+          - id: "transitions"
+            description: "Smooth transitions between sections"
+            required: true
+            points: 2
+          - id: "title-cta"
+            description: "Has title, subtitle, and call-to-action"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Fixes grammar and abbreviations"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["because", "through", "people", "about"]
+            - name: "Expands abbreviated points into paragraphs"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["paragraph", "explains", "means"]
+            - name: "Maintains original voice"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["you", "your", "honestly", "real talk"]
+            - name: "Smooth transitions between sections"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["however", "that said", "speaking of", "this brings"]
+            - name: "Has title, subtitle, and call-to-action"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["title", "follow", "share", "comment", "try"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Adds opinions or facts not present in the original thread"
+          - flag: "-I"
+            condition: "Keeps broken grammar or emoji-heavy style from original"
+
+      - id: "cat8a-hidden"
+        difficulty: "hidden"
+        title: "Contradictory Writing Rules"
+        description: "Writing rules contain contradictory constraints - does the LLM flag the conflict?"
+        prompt: |
+          Read the writing rules in fixtures/contradictory-rules.md carefully.
+
+          Write a 400-word blog post about "Why Side Hustles Fail" following ALL rules.
+          If any rules conflict with each other, identify the conflict before proceeding.
+        source_files:
+          - "fixtures/contradictory-rules.md"
+        expected_findings:
+          - id: "identifies-conflict"
+            description: "Identifies the paragraph length vs thorough explanation conflict"
+            required: true
+            points: 5
+          - id: "compromise"
+            description: "Proposes a compromise approach"
+            required: true
+            points: 3
+          - id: "usable-post"
+            description: "Still produces a usable blog post"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies the paragraph length vs thorough explanation conflict"
+              points: 5
+              match_type: "keyword"
+              match_terms: ["conflict", "contradict", "impossible", "tension", "incompatible"]
+            - name: "Proposes a compromise approach"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["compromise", "balance", "approach", "prioritize", "instead"]
+            - name: "Still produces a usable blog post"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["side hustle", "fail", "mistake", "lesson"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims to follow both contradictory rules without acknowledging the conflict"
+          - flag: "-I"
+            condition: "Ignores the instruction to identify conflicts"
+
+  - id: "b"
+    name: "Bug Bounty Reports"
+    challenges:
+      - id: "cat8b-easy"
+        difficulty: "easy"
+        title: "HackerOne XSS Report"
+        description: "Write a HackerOne bug report for a reflected XSS finding"
+        prompt: |
+          Read the raw findings in fixtures/xss-finding.md.
+
+          Write a complete HackerOne bug report for this XSS vulnerability.
+          Include: title, severity, description, steps to reproduce,
+          impact statement, and suggested remediation.
+
+          Follow HackerOne report format and best practices.
+        source_files:
+          - "fixtures/xss-finding.md"
+        expected_findings:
+          - id: "title"
+            description: "Clear, descriptive title"
+            required: true
+            points: 1
+          - id: "severity"
+            description: "Accurate severity assessment"
+            required: true
+            points: 2
+          - id: "steps"
+            description: "Detailed steps to reproduce"
+            required: true
+            points: 3
+          - id: "impact"
+            description: "Clear impact statement"
+            required: true
+            points: 2
+          - id: "remediation"
+            description: "Remediation suggestion"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Clear, descriptive title"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["XSS", "Reflected", "Cross-Site"]
+            - name: "Accurate severity assessment"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["Medium", "High", "severity", "CVSS"]
+            - name: "Detailed steps to reproduce"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["step", "navigate", "payload", "URL", "inject"]
+            - name: "Clear impact statement"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["impact", "session", "cookie", "steal", "victim"]
+            - name: "Remediation suggestion"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["fix", "remediat", "sanitize", "encode", "CSP"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Exaggerates severity beyond what the finding supports"
+          - flag: "-I"
+            condition: "Missing steps to reproduce or impact statement"
+
+      - id: "cat8b-medium"
+        difficulty: "medium"
+        title: "CVSS 3.1 Score Calculation"
+        description: "Calculate an accurate CVSS 3.1 score for a vulnerability"
+        prompt: |
+          Read the vulnerability description in fixtures/vuln-description.md.
+
+          Calculate the CVSS 3.1 Base Score for this vulnerability.
+          Show your work:
+          1. Determine each metric value with justification
+          2. Show the vector string
+          3. Calculate the final score
+          4. Provide the severity rating (None/Low/Medium/High/Critical)
+
+          Be precise - incorrect metric selections are common mistakes.
+        source_files:
+          - "fixtures/vuln-description.md"
+        expected_findings:
+          - id: "attack-vector"
+            description: "Correct Attack Vector selection"
+            required: true
+            points: 2
+          - id: "scope-impact"
+            description: "Correct Scope and Impact metrics"
+            required: true
+            points: 3
+          - id: "vector-string"
+            description: "Valid CVSS vector string format"
+            required: true
+            points: 2
+          - id: "score"
+            description: "Score within 0.5 of correct answer"
+            required: true
+            points: 2
+          - id: "justification"
+            description: "Justification for each metric"
+            required: false
+            points: 1
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Correct Attack Vector selection"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["AV:N", "Network", "Attack Vector"]
+            - name: "Correct Scope and Impact metrics"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["S:C", "S:U", "Scope", "Changed", "Unchanged"]
+            - name: "Valid CVSS vector string format"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["CVSS:3.1/AV:", "/AC:", "/PR:", "/UI:", "/S:", "/C:", "/I:", "/A:"]
+            - name: "Score within 0.5 of correct answer"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["score", "7.", "8.", "severity"]
+            - name: "Justification for each metric"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["because", "since", "requires", "allows"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Fabricates CVSS metrics not matching the vulnerability description"
+          - flag: "-I"
+            condition: "Provides score without showing work"
+
+      - id: "cat8b-hard"
+        difficulty: "hard"
+        title: "Multi-Platform Report Writing"
+        description: "Write the same vulnerability as reports for HackerOne, MSRC, and Google VRP"
+        prompt: |
+          Read the vulnerability details in fixtures/multi-platform-vuln.md.
+
+          Write THREE separate bug reports for this same vulnerability:
+          1. HackerOne format
+          2. Microsoft Security Response Center (MSRC) format
+          3. Google Vulnerability Reward Program (VRP) format
+
+          Each report should follow the specific conventions and expectations of that platform.
+          Note platform-specific differences in format, tone, severity rating, and what reviewers prioritize.
+        source_files:
+          - "fixtures/multi-platform-vuln.md"
+        expected_findings:
+          - id: "hackerone"
+            description: "HackerOne format compliance"
+            required: true
+            points: 2
+          - id: "msrc"
+            description: "MSRC format compliance"
+            required: true
+            points: 3
+          - id: "vrp"
+            description: "Google VRP format compliance"
+            required: true
+            points: 3
+          - id: "adapts-tone"
+            description: "Adapts tone and emphasis per platform"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "HackerOne format compliance"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["HackerOne", "weakness", "steps to reproduce", "impact"]
+            - name: "MSRC format compliance"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["MSRC", "Microsoft", "repro", "security impact", "affected product"]
+            - name: "Google VRP format compliance"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["VRP", "Google", "product", "attack scenario", "proof"]
+            - name: "Adapts tone and emphasis per platform"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["severity", "impact", "affected", "scope"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Uses identical format for all three platforms"
+          - flag: "-I"
+            condition: "Misses a platform or uses wrong format conventions"
+
+      - id: "cat8b-difficult"
+        difficulty: "difficult"
+        title: "Exploit Chain Documentation"
+        description: "Document a multi-step exploit chain with clear narrative"
+        prompt: |
+          Read the exploit chain details in fixtures/exploit-chain.md.
+
+          Write a comprehensive bug report documenting this exploit chain.
+          Requirements:
+          - Clear narrative showing how each step leads to the next
+          - Individual CVSS scores for each vulnerability in the chain
+          - Combined impact assessment
+          - Attack flow diagram (ASCII art or structured text)
+          - Business impact section explaining risk to the organization
+          - Suggested fix for each step in the chain
+        source_files:
+          - "fixtures/exploit-chain.md"
+        expected_findings:
+          - id: "chain-narrative"
+            description: "Clear chain narrative showing step-by-step escalation"
+            required: true
+            points: 3
+          - id: "individual-cvss"
+            description: "Individual CVSS scores per vulnerability"
+            required: true
+            points: 2
+          - id: "attack-flow"
+            description: "Attack flow diagram or structured flow"
+            required: true
+            points: 2
+          - id: "business-impact"
+            description: "Business impact assessment"
+            required: false
+            points: 2
+          - id: "fix-per-step"
+            description: "Fix recommendation per step"
+            required: false
+            points: 1
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Clear chain narrative (step 1 leads to step 2, etc.)"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["chain", "leads to", "then", "using this", "escalat"]
+            - name: "Individual CVSS scores per vulnerability"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["CVSS", "score", "IDOR", "privilege", "exfiltration"]
+            - name: "Attack flow diagram or structured flow"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["->", "flow", "step 1", "step 2", "step 3"]
+            - name: "Business impact assessment"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["business", "risk", "data", "compliance", "breach"]
+            - name: "Fix recommendation per step"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["fix", "remediat", "patch", "mitigat"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Invents exploit steps not in the source material"
+          - flag: "-I"
+            condition: "Missing CVSS scores or attack flow diagram"
+
+      - id: "cat8b-hidden"
+        difficulty: "hidden"
+        title: "Borderline Finding Optimization"
+        description: "Maximize acceptance probability for a borderline bug report"
+        prompt: |
+          Read the borderline finding in fixtures/borderline-finding.md.
+
+          This finding is on the edge of being accepted vs rejected by triage.
+          Write a bug report optimized for maximum acceptance probability.
+
+          Consider:
+          - How to frame the impact convincingly without exaggeration
+          - What additional proof-of-concept work would strengthen the report
+          - How to preemptively address likely triage objections
+          - Whether to report as-is or suggest it's part of a larger attack surface
+        source_files:
+          - "fixtures/borderline-finding.md"
+        expected_findings:
+          - id: "convincing-impact"
+            description: "Frames impact convincingly without exaggeration"
+            required: true
+            points: 3
+          - id: "additional-poc"
+            description: "Suggests additional PoC work"
+            required: true
+            points: 2
+          - id: "addresses-objections"
+            description: "Preemptively addresses triage objections"
+            required: true
+            points: 3
+          - id: "honest-limitations"
+            description: "Honest about limitations"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Frames impact convincingly without exaggeration"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["impact", "attacker", "scenario", "realistic"]
+            - name: "Suggests additional PoC work"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["proof", "demonstrate", "PoC", "exploit"]
+            - name: "Preemptively addresses triage objections"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["might argue", "objection", "however", "despite", "although"]
+            - name: "Honest about limitations"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["limitation", "caveat", "note", "however", "full exploit"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Exaggerates severity or invents impact scenarios"
+          - flag: "-I"
+            condition: "Ignores instruction to address triage objections"

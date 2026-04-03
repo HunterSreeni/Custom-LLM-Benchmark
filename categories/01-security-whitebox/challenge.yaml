@@ -1,0 +1,303 @@
+category:
+  id: 1
+  name: "Security - Whitebox"
+  slug: "security-whitebox"
+  type: "standard"
+  tech_stack: ["Java", "Spring Boot", "Spring Security", "JPA/Hibernate", "Angular", "TypeScript"]
+
+description: |
+  You are reviewing the source code of TechMart, a Spring Boot e-commerce backend with an
+  Angular frontend. Your task is to identify security vulnerabilities in the codebase.
+  Analyze the provided source files and report any issues you find, including the file,
+  the vulnerable code, the type of vulnerability, its severity, and how it could be exploited.
+
+phases:
+  - id: "default"
+    name: "Whitebox Security Analysis"
+    challenges:
+      - id: "cat1-easy"
+        difficulty: "easy"
+        title: "SQL Injection in User Search"
+        description: |
+          Review the user search functionality in the TechMart application.
+          The search feature allows users to find other users by username, email,
+          or full name. Examine the implementation for any injection vulnerabilities.
+        source_files:
+          - "app/src/main/java/com/techmart/controller/UserController.java"
+          - "app/src/main/java/com/techmart/service/UserService.java"
+          - "app/src/main/java/com/techmart/repository/UserRepository.java"
+          - "app/src/main/java/com/techmart/dto/UserSearchRequest.java"
+        prompt: |
+          Analyze the user search code path from controller to database query.
+          Identify any input handling vulnerabilities and explain how they could be exploited.
+        expected_findings:
+          - id: "identify-sqli"
+            description: "Identifies the SQL injection vulnerability"
+            required: true
+            points: 3
+          - id: "locate-vulnerable-code"
+            description: "Points to the exact vulnerable code in UserService.searchUsers"
+            required: true
+            points: 3
+          - id: "explain-exploit"
+            description: "Explains how the injection could be exploited"
+            required: false
+            points: 2
+          - id: "suggest-fix"
+            description: "Suggests parameterized queries or prepared statements as a fix"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies the SQL injection vulnerability"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["SQL injection", "SQLi", "sql injection", "string concatenation", "native query"]
+            - name: "Points to the exact vulnerable code in UserService.searchUsers"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["searchUsers", "UserService", "createNativeQuery", "entityManager", "string concat"]
+            - name: "Explains how the injection could be exploited"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["UNION", "OR 1=1", "DROP", "payload", "escape", "single quote", "tautology"]
+            - name: "Suggests parameterized queries or prepared statements as a fix"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["parameterized", "prepared statement", "setParameter", "named parameter", "bind variable", "JPA Criteria"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims a vulnerability that does not exist in the provided files"
+          - flag: "-I"
+            condition: "Does not analyze the search code path as instructed"
+
+      - id: "cat1-medium"
+        difficulty: "medium"
+        title: "Broken Access Control on Admin Endpoints"
+        description: |
+          Review the admin functionality and security configuration of the TechMart
+          application. The admin panel provides user management and application settings
+          endpoints. Examine whether proper authorization is enforced.
+        source_files:
+          - "app/src/main/java/com/techmart/controller/AdminController.java"
+          - "app/src/main/java/com/techmart/config/SecurityConfig.java"
+        prompt: |
+          Analyze the AdminController endpoints and compare them against the security
+          configuration in SecurityConfig.java. Determine whether admin endpoints are
+          properly protected from unauthorized access.
+        expected_findings:
+          - id: "identify-missing-auth"
+            description: "Identifies that admin endpoints lack role-based authorization"
+            required: true
+            points: 3
+          - id: "locate-config-gap"
+            description: "Points out the missing admin path restriction in SecurityConfig"
+            required: true
+            points: 3
+          - id: "explain-impact"
+            description: "Explains the impact - any authenticated user can access admin functions"
+            required: false
+            points: 2
+          - id: "suggest-fix"
+            description: "Suggests adding role-based access control"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies that admin endpoints lack role-based authorization"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["broken access control", "missing authorization", "no role check", "missing hasRole", "IDOR", "unauthenticated"]
+            - name: "Points out the missing admin path restriction in SecurityConfig"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["SecurityConfig", "/api/admin", "requestMatchers", "hasRole", "ADMIN", "PreAuthorize"]
+            - name: "Explains the impact - any authenticated user can access admin functions"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["privilege escalation", "any user", "role change", "settings", "user management", "horizontal", "vertical"]
+            - name: "Suggests adding role-based access control"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["hasRole", "ROLE_ADMIN", "@PreAuthorize", "@Secured", "requestMatchers", "antMatchers"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims a non-existent vulnerability in these files"
+          - flag: "-I"
+            condition: "Does not compare controller against security config"
+
+      - id: "cat1-hard"
+        difficulty: "hard"
+        title: "Server-Side Request Forgery in Report Generation"
+        description: |
+          Review the report generation feature of TechMart. The system allows users
+          to generate PDF reports with customizable header images. Examine the
+          implementation for any server-side request vulnerabilities.
+        source_files:
+          - "app/src/main/java/com/techmart/controller/ReportController.java"
+          - "app/src/main/java/com/techmart/service/ReportService.java"
+          - "app/src/main/java/com/techmart/dto/ReportRequest.java"
+        prompt: |
+          Trace the report generation flow from the controller through the service layer.
+          Pay particular attention to how external resources are fetched and whether
+          user-supplied URLs are validated.
+        expected_findings:
+          - id: "identify-ssrf"
+            description: "Identifies the SSRF vulnerability in the header image fetch"
+            required: true
+            points: 3
+          - id: "locate-vulnerable-code"
+            description: "Points to fetchHeaderImage and URL.openStream as the vulnerable code"
+            required: true
+            points: 3
+          - id: "explain-exploit"
+            description: "Describes exploitation scenarios like accessing internal services"
+            required: false
+            points: 2
+          - id: "suggest-fix"
+            description: "Suggests URL validation, allowlist, or blocking internal ranges"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies the SSRF vulnerability in the header image fetch"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["SSRF", "server-side request forgery", "arbitrary URL", "URL fetch", "open redirect"]
+            - name: "Points to fetchHeaderImage and URL.openStream as the vulnerable code"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["fetchHeaderImage", "openStream", "headerImageUrl", "URL(", "ReportService"]
+            - name: "Describes exploitation scenarios like accessing internal services"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["169.254.169.254", "metadata", "internal", "localhost", "port scan", "cloud metadata", "file://"]
+            - name: "Suggests URL validation, allowlist, or blocking internal ranges"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["allowlist", "whitelist", "URL validation", "block internal", "private IP", "deny list", "SSRF filter"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims a non-existent vulnerability in these files"
+          - flag: "-I"
+            condition: "Does not trace the URL fetching flow"
+
+      - id: "cat1-difficult"
+        difficulty: "difficult"
+        title: "Insecure Deserialization in Session Handling"
+        description: |
+          Review the custom session management implementation in TechMart.
+          The application uses a custom session service for storing and restoring
+          user session data. Examine the serialization mechanism for security issues.
+        source_files:
+          - "app/src/main/java/com/techmart/controller/SessionController.java"
+          - "app/src/main/java/com/techmart/service/SessionService.java"
+        prompt: |
+          Analyze how session data is serialized, stored, and deserialized. Look for
+          unsafe deserialization patterns that could allow remote code execution.
+          Consider what an attacker could achieve by providing crafted serialized data.
+        expected_findings:
+          - id: "identify-deserialization"
+            description: "Identifies the insecure deserialization vulnerability"
+            required: true
+            points: 3
+          - id: "locate-vulnerable-code"
+            description: "Points to getSessionData and restoreSession as vulnerable methods"
+            required: true
+            points: 2
+          - id: "explain-exploit"
+            description: "Explains gadget chain exploitation for RCE"
+            required: false
+            points: 3
+          - id: "suggest-fix"
+            description: "Suggests deserialization filters, JSON alternatives, or class whitelisting"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies the insecure deserialization vulnerability"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["insecure deserialization", "unsafe deserialization", "ObjectInputStream", "readObject", "Java deserialization"]
+            - name: "Points to getSessionData and restoreSession as vulnerable methods"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["getSessionData", "restoreSession", "SessionService", "Base64.getDecoder", "ObjectInputStream"]
+            - name: "Explains gadget chain exploitation for RCE"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["gadget chain", "Commons Collections", "ysoserial", "RCE", "remote code execution", "arbitrary code", "crafted payload"]
+            - name: "Suggests deserialization filters, JSON alternatives, or class whitelisting"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["ObjectInputFilter", "deserialization filter", "JSON", "whitelist", "allowedClasses", "look-ahead", "serialization filter"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims a non-existent vulnerability in these files"
+          - flag: "-I"
+            condition: "Does not analyze the deserialization flow"
+
+      - id: "cat1-hidden"
+        difficulty: "hidden"
+        title: "Client-Side Authorization Bypass in Angular Admin Guard"
+        description: |
+          Review the full authentication and authorization flow of TechMart,
+          including both the frontend Angular application and the backend Spring
+          Security configuration. Look for gaps between client-side and server-side
+          security controls.
+        source_files:
+          - "app/src/frontend/src/app/guards/admin.guard.ts"
+          - "app/src/frontend/src/app/services/auth.service.ts"
+          - "app/src/frontend/src/app/pages/admin/admin.component.ts"
+          - "app/src/main/java/com/techmart/config/SecurityConfig.java"
+          - "app/src/main/java/com/techmart/controller/AdminController.java"
+        prompt: |
+          Examine how admin access is controlled across the full stack. Compare the
+          frontend route guards and component logic with the backend security
+          configuration. Identify any architectural security weaknesses in the
+          authorization model.
+        expected_findings:
+          - id: "identify-client-side-auth"
+            description: "Identifies that authorization relies on client-side localStorage checks"
+            required: true
+            points: 3
+          - id: "connect-to-backend-gap"
+            description: "Connects the frontend guard weakness to the missing backend authorization"
+            required: true
+            points: 3
+          - id: "explain-exploit-chain"
+            description: "Describes the full exploit chain - modify localStorage and call API directly"
+            required: false
+            points: 2
+          - id: "architectural-insight"
+            description: "Explains why defense-in-depth matters and frontend guards are insufficient"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies that authorization relies on client-side localStorage checks"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["client-side", "localStorage", "route guard", "frontend only", "client-side bypass"]
+            - name: "Connects the frontend guard weakness to the missing backend authorization"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["no server-side", "backend missing", "SecurityConfig", "API unprotected", "both frontend and backend"]
+            - name: "Describes the full exploit chain - modify localStorage and call API directly"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["modify localStorage", "DevTools", "curl", "Postman", "direct API", "browser console", "set role"]
+            - name: "Explains why defense-in-depth matters and frontend guards are insufficient"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["defense in depth", "never trust client", "server-side validation", "complementary", "defense-in-depth"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims a vulnerability that does not exist in the provided files"
+          - flag: "-I"
+            condition: "Only analyzes frontend or backend in isolation"

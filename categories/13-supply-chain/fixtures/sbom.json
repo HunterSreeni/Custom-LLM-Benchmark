@@ -1,0 +1,168 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "serialNumber": "urn:uuid:a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2024-01-15T10:30:00Z",
+    "tools": [
+      {
+        "vendor": "CycloneDX",
+        "name": "cdxgen",
+        "version": "9.8.0"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "name": "payment-service",
+      "version": "4.2.1",
+      "bom-ref": "payment-service@4.2.1"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "spring-boot-starter-web",
+      "version": "2.7.14",
+      "group": "org.springframework.boot",
+      "purl": "pkg:maven/org.springframework.boot/spring-boot-starter-web@2.7.14",
+      "bom-ref": "spring-boot-starter-web@2.7.14"
+    },
+    {
+      "type": "library",
+      "name": "spring-boot-starter-security",
+      "version": "2.7.14",
+      "group": "org.springframework.boot",
+      "purl": "pkg:maven/org.springframework.boot/spring-boot-starter-security@2.7.14",
+      "bom-ref": "spring-boot-starter-security@2.7.14"
+    },
+    {
+      "type": "library",
+      "name": "jackson-databind",
+      "version": "2.13.4",
+      "group": "com.fasterxml.jackson.core",
+      "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.13.4",
+      "bom-ref": "jackson-databind@2.13.4",
+      "description": "General data-binding functionality for Jackson"
+    },
+    {
+      "type": "library",
+      "name": "log4j-core",
+      "version": "2.17.0",
+      "group": "org.apache.logging.log4j",
+      "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.17.0",
+      "bom-ref": "log4j-core@2.17.0"
+    },
+    {
+      "type": "library",
+      "name": "snakeyaml",
+      "version": "1.30",
+      "group": "org.yaml",
+      "purl": "pkg:maven/org.yaml/snakeyaml@1.30",
+      "bom-ref": "snakeyaml@1.30",
+      "description": "YAML parser and emitter for Java"
+    },
+    {
+      "type": "library",
+      "name": "commons-text",
+      "version": "1.9",
+      "group": "org.apache.commons",
+      "purl": "pkg:maven/org.apache.commons/commons-text@1.9",
+      "bom-ref": "commons-text@1.9"
+    },
+    {
+      "type": "library",
+      "name": "postgresql",
+      "version": "42.4.1",
+      "group": "org.postgresql",
+      "purl": "pkg:maven/org.postgresql/postgresql@42.4.1",
+      "bom-ref": "postgresql@42.4.1"
+    },
+    {
+      "type": "library",
+      "name": "hibernate-core",
+      "version": "5.6.15.Final",
+      "group": "org.hibernate",
+      "purl": "pkg:maven/org.hibernate/hibernate-core@5.6.15.Final",
+      "bom-ref": "hibernate-core@5.6.15.Final"
+    },
+    {
+      "type": "library",
+      "name": "guava",
+      "version": "31.1-jre",
+      "group": "com.google.guava",
+      "purl": "pkg:maven/com.google.guava/guava@31.1-jre",
+      "bom-ref": "guava@31.1-jre"
+    },
+    {
+      "type": "library",
+      "name": "netty-handler",
+      "version": "4.1.86.Final",
+      "group": "io.netty",
+      "purl": "pkg:maven/io.netty/netty-handler@4.1.86.Final",
+      "bom-ref": "netty-handler@4.1.86.Final"
+    },
+    {
+      "type": "library",
+      "name": "spring-security-crypto",
+      "version": "5.7.10",
+      "group": "org.springframework.security",
+      "purl": "pkg:maven/org.springframework.security/spring-security-crypto@5.7.10",
+      "bom-ref": "spring-security-crypto@5.7.10"
+    },
+    {
+      "type": "library",
+      "name": "tomcat-embed-core",
+      "version": "9.0.78",
+      "group": "org.apache.tomcat.embed",
+      "purl": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@9.0.78",
+      "bom-ref": "tomcat-embed-core@9.0.78"
+    },
+    {
+      "type": "library",
+      "name": "h2",
+      "version": "2.1.214",
+      "group": "com.h2database",
+      "purl": "pkg:maven/com.h2database/h2@2.1.214",
+      "bom-ref": "h2@2.1.214"
+    },
+    {
+      "type": "library",
+      "name": "protobuf-java",
+      "version": "3.21.7",
+      "group": "com.google.protobuf",
+      "purl": "pkg:maven/com.google.protobuf/protobuf-java@3.21.7",
+      "bom-ref": "protobuf-java@3.21.7"
+    },
+    {
+      "type": "library",
+      "name": "json-path",
+      "version": "2.7.0",
+      "group": "com.jayway.jsonpath",
+      "purl": "pkg:maven/com.jayway.jsonpath/json-path@2.7.0",
+      "bom-ref": "json-path@2.7.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "payment-service@4.2.1",
+      "dependsOn": [
+        "spring-boot-starter-web@2.7.14",
+        "spring-boot-starter-security@2.7.14",
+        "jackson-databind@2.13.4",
+        "log4j-core@2.17.0",
+        "snakeyaml@1.30",
+        "commons-text@1.9",
+        "postgresql@42.4.1",
+        "hibernate-core@5.6.15.Final",
+        "guava@31.1-jre",
+        "netty-handler@4.1.86.Final",
+        "spring-security-crypto@5.7.10",
+        "tomcat-embed-core@9.0.78",
+        "h2@2.1.214",
+        "protobuf-java@3.21.7",
+        "json-path@2.7.0"
+      ]
+    }
+  ]
+}

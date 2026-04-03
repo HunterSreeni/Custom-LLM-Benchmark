@@ -1,0 +1,96 @@
+diff --git a/src/services/payment.ts b/src/services/payment.ts
+index a1b2c3d..d4e5f6a 100644
+--- a/src/services/payment.ts
++++ b/src/services/payment.ts
+@@ -1,42 +1,68 @@
+ import Stripe from 'stripe';
+ import { Order } from '../models/Order';
++import { Decimal } from 'decimal.js';
+ import { logger } from '../utils/logger';
+
+ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+   apiVersion: '2023-10-16',
+ });
+
+-export async function processPayment(order: Order): Promise<string> {
+-  const amount = Math.round(order.total * 100); // Convert to cents
++interface PaymentResult {
++  intentId: string;
++  status: 'succeeded' | 'requires_action' | 'failed';
++  amount: number;
++  currency: string;
++}
+
++export async function processPayment(order: Order): Promise<PaymentResult> {
++  // Use Decimal.js to avoid floating point errors in currency calculations
++  const subtotal = order.items.reduce((sum, item) => {
++    return new Decimal(sum).plus(
++      new Decimal(item.unitPrice).times(item.quantity)
++    );
++  }, new Decimal(0));
++
++  const taxAmount = subtotal.times(new Decimal(order.taxRate || 0));
++  const discountAmount = order.discountAmount
++    ? new Decimal(order.discountAmount)
++    : new Decimal(0);
++
++  const totalDecimal = subtotal.plus(taxAmount).minus(discountAmount);
++
++  // Ensure non-negative
++  const finalTotal = Decimal.max(totalDecimal, new Decimal(0));
++
++  // Convert to cents (integer) for Stripe
++  const amountInCents = finalTotal.times(100).round().toNumber();
++
++  if (amountInCents === 0) {
++    logger.info(`Zero-amount order ${order.id}, skipping payment`);
++    return {
++      intentId: `free_${order.id}`,
++      status: 'succeeded',
++      amount: 0,
++      currency: order.currency,
++    };
++  }
+
+   const paymentIntent = await stripe.paymentIntents.create({
+-    amount,
+-    currency: 'usd',
++    amount: amountInCents,
++    currency: order.currency.toLowerCase(),
+     metadata: {
+       orderId: order.id,
++      subtotal: subtotal.toFixed(2),
++      tax: taxAmount.toFixed(2),
++      discount: discountAmount.toFixed(2),
+     },
+     idempotencyKey: `order_${order.id}`,
+   });
+
+   logger.info(`Payment intent created: ${paymentIntent.id} for order ${order.id}`);
+
+-  return paymentIntent.id;
+-}
+-
+-export async function refundPayment(
+-  paymentIntentId: string,
+-  amount?: number
+-): Promise<void> {
+-  const params: Stripe.RefundCreateParams = {
+-    payment_intent: paymentIntentId,
++  return {
++    intentId: paymentIntent.id,
++    status: paymentIntent.status === 'succeeded'
++      ? 'succeeded'
++      : paymentIntent.status === 'requires_action'
++        ? 'requires_action'
++        : 'failed',
++    amount: amountInCents,
++    currency: order.currency,
+   };
+-  if (amount) {
+-    params.amount = Math.round(amount * 100);
+-  }
+-
+-  await stripe.refunds.create(params);
+-  logger.info(`Refund processed for ${paymentIntentId}`);
+ }

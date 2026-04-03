@@ -1,0 +1,36 @@
+# HTTP Response captured from: GET /api/products/1
+# Note: Full headers including non-standard ones
+
+HTTP/1.1 200 OK
+Server: Go-HTTP-Server/1.1
+Content-Type: application/json; charset=utf-8
+X-Request-ID: req-c4a8f2b1-7e3d-4a1f-9b2c-5d6e7f8a9b0c
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-Debug-Token: FLAG{debug_token_d34db33f}
+X-Debug-Timestamp: 2026-04-03T09:51:17.332Z
+X-Debug-Handler: handlers.GetProduct
+X-Debug-DB-Queries: 3
+X-Debug-DB-Time: 2.41ms
+X-Debug-Render-Time: 0.87ms
+X-Debug-Cache: MISS
+X-Debug-User-ID: 42
+X-Debug-Session: active
+Set-Cookie: session=eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo0Mn0.abc123; Path=/; HttpOnly
+Cache-Control: no-store
+Content-Length: 847
+Date: Thu, 03 Apr 2026 09:51:17 GMT
+Connection: keep-alive
+
+{
+  "id": 1,
+  "name": "Wireless Mechanical Keyboard",
+  "price": 89.99,
+  "description": "Cherry MX Brown switches, Bluetooth 5.0, USB-C charging",
+  "category": "peripherals",
+  "stock": 47,
+  "image_url": "/static/images/products/keyboard-1.jpg",
+  "rating": 4.6,
+  "review_count": 128,
+  "created_at": "2026-01-15T08:30:00Z"
+}

@@ -1,0 +1,60 @@
+{
+  "project": "acme-monorepo",
+  "version": "2.0.0",
+  "description": "Monorepo with multiple service ecosystems",
+  "services": {
+    "api-gateway": {
+      "ecosystem": "npm",
+      "path": "services/api-gateway/",
+      "dependencies": {
+        "express": "4.17.1",
+        "http-proxy-middleware": "2.0.6",
+        "helmet": "5.1.1",
+        "jsonwebtoken": "8.5.1",
+        "cors": "2.8.5",
+        "rate-limiter-flexible": "2.4.1",
+        "winston": "3.8.2",
+        "dotenv": "16.0.3"
+      }
+    },
+    "ml-pipeline": {
+      "ecosystem": "pip",
+      "path": "services/ml-pipeline/",
+      "dependencies": {
+        "flask": "2.2.3",
+        "numpy": "1.24.2",
+        "pandas": "1.5.3",
+        "scikit-learn": "1.2.2",
+        "tensorflow": "2.11.0",
+        "pillow": "9.4.0",
+        "pyyaml": "5.4",
+        "requests": "2.28.2",
+        "celery": "5.2.7",
+        "redis": "4.5.4",
+        "boto3": "1.26.100",
+        "protobuf": "3.19.6"
+      }
+    },
+    "auth-service": {
+      "ecosystem": "go",
+      "path": "services/auth-service/",
+      "dependencies": {
+        "github.com/gin-gonic/gin": "v1.8.2",
+        "github.com/golang-jwt/jwt/v4": "v4.4.3",
+        "github.com/go-redis/redis/v8": "v8.11.5",
+        "golang.org/x/crypto": "v0.0.0-20220314234659-1baeb1ce4c0b",
+        "google.golang.org/grpc": "v1.53.0",
+        "github.com/jackc/pgx/v5": "v5.3.1"
+      }
+    }
+  },
+  "shared_config": {
+    "registry_mirrors": [
+      "https://registry.npmjs.org",
+      "https://pypi.org/simple",
+      "https://proxy.golang.org"
+    ],
+    "lockfile_policy": "recommended",
+    "audit_schedule": "weekly"
+  }
+}

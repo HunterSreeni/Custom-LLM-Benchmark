@@ -1,0 +1,606 @@
+category:
+  id: 12
+  name: "Code Review & PR Analysis"
+  slug: "code-review"
+  type: "2-phase"
+  tech_stack: ["Git diffs", "TypeScript", "Python", "Go"]
+
+phases:
+  - id: "a"
+    name: "Code Quality Review"
+    challenges:
+      - id: "cat12a-easy"
+        difficulty: "easy"
+        title: "Style and Smell Review"
+        description: "Review a PR diff for code style issues and code smells"
+        prompt: |
+          Review the following PR diff in fixtures/style-pr.diff.
+
+          Identify all code quality issues including:
+          - Code style violations
+          - Code smells (magic numbers, long functions, poor naming)
+          - Potential maintainability problems
+          - Missing error handling
+
+          For each issue, provide: location (file + line), description, severity, and suggested fix.
+        source_files:
+          - "fixtures/style-pr.diff"
+        expected_findings:
+          - id: "magic-numbers"
+            description: "Identifies magic numbers"
+            required: true
+            points: 2
+          - id: "naming-issues"
+            description: "Identifies naming issues"
+            required: true
+            points: 2
+          - id: "missing-error-handling"
+            description: "Identifies missing error handling"
+            required: true
+            points: 3
+          - id: "complexity"
+            description: "Identifies long function / complexity"
+            required: false
+            points: 2
+          - id: "actionable-fixes"
+            description: "Provides actionable fixes"
+            required: false
+            points: 1
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies magic numbers"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["magic number", "constant", "86400", "3600", "hardcoded"]
+            - name: "Identifies naming issues"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["naming", "variable", "descriptive", "unclear", "abbreviat"]
+            - name: "Identifies missing error handling"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["error", "catch", "try", "null check", "undefined"]
+            - name: "Identifies long function / complexity"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["long", "complex", "refactor", "extract", "split"]
+            - name: "Provides actionable fixes"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["suggest", "instead", "should", "recommend"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Invents issues not present in the diff"
+          - flag: "-I"
+            condition: "Only comments on trivial formatting, misses substantive issues"
+
+      - id: "cat12a-medium"
+        difficulty: "medium"
+        title: "Logic Bug in Diff"
+        description: "Find an off-by-one error hidden in a PR diff"
+        prompt: |
+          Review the following PR diff in fixtures/logic-bug-pr.diff.
+
+          This PR implements pagination logic for a data listing feature.
+          Look for logic errors, edge cases, and off-by-one bugs.
+
+          For each issue found, provide: location, description, a concrete example
+          demonstrating the bug, and a suggested fix.
+        source_files:
+          - "fixtures/logic-bug-pr.diff"
+        expected_findings:
+          - id: "off-by-one"
+            description: "Identifies the off-by-one in page calculation"
+            required: true
+            points: 4
+          - id: "failing-example"
+            description: "Provides concrete failing example"
+            required: true
+            points: 3
+          - id: "empty-page"
+            description: "Identifies empty page edge case"
+            required: false
+            points: 2
+          - id: "correct-fix"
+            description: "Suggests correct fix"
+            required: false
+            points: 1
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies the off-by-one in page calculation"
+              points: 4
+              match_type: "keyword"
+              match_terms: ["off-by-one", "Math.ceil", "floor", "boundary", "last page"]
+            - name: "Provides concrete failing example"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["example", "items", "page", "returns", "expected"]
+            - name: "Identifies empty page edge case"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["empty", "zero", "no items", "edge case"]
+            - name: "Suggests correct fix"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["ceil", "Math.ceil", "fix", "correct"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims bugs exist in lines that are correct"
+          - flag: "-I"
+            condition: "Misses the off-by-one error entirely"
+
+      - id: "cat12a-hard"
+        difficulty: "hard"
+        title: "Breaking Change Detection"
+        description: "Identify downstream breakage from a utility function change"
+        prompt: |
+          Review the PR diff in fixtures/breaking-change-pr.diff.
+          Also review fixtures/dependents-list.txt which lists all files that import the changed utility.
+
+          This PR modifies a widely-used utility function. Determine:
+          1. What changed in the function's signature and behavior
+          2. Which dependent files will break and why
+          3. Whether this is a safe change or needs a migration plan
+
+          Be specific about which call sites break.
+        source_files:
+          - "fixtures/breaking-change-pr.diff"
+          - "fixtures/dependents-list.txt"
+        expected_findings:
+          - id: "signature-change"
+            description: "Identifies the signature change"
+            required: true
+            points: 2
+          - id: "dependents-break"
+            description: "Identifies which dependents break"
+            required: true
+            points: 3
+          - id: "explains-why"
+            description: "Explains why they break"
+            required: true
+            points: 3
+          - id: "migration"
+            description: "Suggests migration approach"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies the signature change"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["parameter", "argument", "signature", "return type", "options"]
+            - name: "Identifies which dependents break"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["break", "import", "caller", "call site", "dependent"]
+            - name: "Explains why they break"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["positional", "object", "undefined", "missing", "incompatible"]
+            - name: "Suggests migration approach"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["deprecat", "overload", "migration", "backward", "compatible"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims files break that would actually still work"
+          - flag: "-I"
+            condition: "Does not examine the dependents list"
+
+      - id: "cat12a-difficult"
+        difficulty: "difficult"
+        title: "Security Vulnerability in Refactor PR"
+        description: "Find a hidden security vulnerability in a large refactoring PR"
+        prompt: |
+          Review the large refactoring PR diff in fixtures/security-in-refactor-pr.diff.
+
+          This PR refactors the user authentication module for "cleaner code."
+          The author claims it's a pure refactor with no behavior changes.
+
+          Review carefully for:
+          1. Any behavior changes disguised as refactoring
+          2. Security implications of the changes
+          3. Whether the "refactor" actually introduces new vulnerabilities
+
+          Focus on security-critical sections.
+        source_files:
+          - "fixtures/security-in-refactor-pr.diff"
+        expected_findings:
+          - id: "removed-auth"
+            description: "Identifies the removed authorization check"
+            required: true
+            points: 4
+          - id: "weakened-password"
+            description: "Identifies the weakened password validation"
+            required: true
+            points: 3
+          - id: "not-refactor"
+            description: "Notes this is NOT a pure refactor"
+            required: true
+            points: 2
+          - id: "block-pr"
+            description: "Recommends blocking the PR"
+            required: false
+            points: 1
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies the removed authorization check"
+              points: 4
+              match_type: "keyword"
+              match_terms: ["authorization", "check", "removed", "bypass", "missing"]
+            - name: "Identifies the weakened password validation"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["password", "validation", "length", "weakened", "minimum"]
+            - name: "Notes this is NOT a pure refactor"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["behavior change", "not a refactor", "functional change", "security regression"]
+            - name: "Recommends blocking the PR"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["block", "reject", "request changes", "do not merge"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims security issues in lines that are actually safe"
+          - flag: "-I"
+            condition: "Approves the PR without catching the security regressions"
+
+      - id: "cat12a-hidden"
+        difficulty: "hidden"
+        title: "Good PR - Phantom Issue Detection"
+        description: "A clean, correct PR - does the LLM invent phantom issues?"
+        prompt: |
+          Review the PR diff in fixtures/good-pr.diff.
+
+          This PR adds a new utility function with tests. Review it for:
+          - Correctness
+          - Code quality
+          - Test coverage
+          - Potential issues
+
+          Provide your review with an approve/request-changes recommendation.
+        source_files:
+          - "fixtures/good-pr.diff"
+        expected_findings:
+          - id: "approves"
+            description: "Approves the PR (it is correct)"
+            required: true
+            points: 4
+          - id: "good-tests"
+            description: "Acknowledges good test coverage"
+            required: true
+            points: 2
+          - id: "minor-only"
+            description: "Minor suggestions only (not blocking)"
+            required: false
+            points: 2
+          - id: "no-phantom-bugs"
+            description: "Does NOT invent phantom bugs"
+            required: true
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Approves the PR (it is correct)"
+              points: 4
+              match_type: "keyword"
+              match_terms: ["approve", "LGTM", "looks good", "ship it", "merge"]
+            - name: "Acknowledges good test coverage"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["test", "coverage", "edge case", "well tested"]
+            - name: "Minor suggestions only (not blocking)"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["nit", "minor", "optional", "consider", "suggestion"]
+            - name: "Does NOT invent phantom bugs"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["correct", "clean", "solid", "well written"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims bugs exist in correct code or invents issues to justify requesting changes"
+          - flag: "-I"
+            condition: "Requests changes on a correct PR for non-existent issues"
+
+  - id: "b"
+    name: "PR Context Review"
+    challenges:
+      - id: "cat12b-easy"
+        difficulty: "easy"
+        title: "Python PR Review"
+        description: "Review a Python PR for common mistakes"
+        prompt: |
+          Review the Python PR diff in fixtures/python-pr.diff.
+
+          Look for common Python mistakes including:
+          - Mutable default arguments
+          - Incorrect exception handling
+          - Type hint issues
+          - Pythonic style violations
+
+          For each issue, provide location, description, and fix.
+        source_files:
+          - "fixtures/python-pr.diff"
+        expected_findings:
+          - id: "mutable-default"
+            description: "Identifies mutable default argument"
+            required: true
+            points: 3
+          - id: "bare-except"
+            description: "Identifies bare except clause"
+            required: true
+            points: 3
+          - id: "type-hints"
+            description: "Identifies type hint issues"
+            required: false
+            points: 2
+          - id: "pythonic"
+            description: "Suggests Pythonic improvements"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies mutable default argument"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["mutable", "default", "list", "dict", "None"]
+            - name: "Identifies bare except clause"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["bare except", "Exception", "specific", "catch"]
+            - name: "Identifies type hint issues"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["type", "hint", "Optional", "Union", "Any"]
+            - name: "Suggests Pythonic improvements"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["pythonic", "list comprehension", "enumerate", "f-string"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims Python syntax errors where code is valid"
+          - flag: "-I"
+            condition: "Misses the mutable default argument issue"
+
+      - id: "cat12b-medium"
+        difficulty: "medium"
+        title: "Go Concurrency Review"
+        description: "Review a Go PR for concurrency issues"
+        prompt: |
+          Review the Go PR diff in fixtures/go-concurrency-pr.diff.
+
+          This PR adds concurrent processing to a data pipeline.
+          Look for concurrency issues including:
+          - Data races
+          - Goroutine leaks
+          - Deadlock potential
+          - Missing synchronization
+
+          For each issue, explain the race condition scenario.
+        source_files:
+          - "fixtures/go-concurrency-pr.diff"
+        expected_findings:
+          - id: "data-race"
+            description: "Identifies the data race on shared map"
+            required: true
+            points: 4
+          - id: "goroutine-leak"
+            description: "Identifies goroutine leak on error path"
+            required: true
+            points: 3
+          - id: "race-scenario"
+            description: "Explains the race scenario"
+            required: false
+            points: 2
+          - id: "proper-fix"
+            description: "Suggests proper fix"
+            required: false
+            points: 1
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies the data race on shared map"
+              points: 4
+              match_type: "keyword"
+              match_terms: ["race", "map", "concurrent", "mutex", "sync.Map"]
+            - name: "Identifies goroutine leak on error path"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["goroutine", "leak", "context", "cancel", "return"]
+            - name: "Explains the race scenario"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["goroutine", "write", "read", "simultaneous", "crash"]
+            - name: "Suggests proper fix"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["Mutex", "sync.Map", "channel", "WaitGroup"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims races that cannot occur given the code flow"
+          - flag: "-I"
+            condition: "Misses the obvious map data race"
+
+      - id: "cat12b-hard"
+        difficulty: "hard"
+        title: "Database Migration PR Review"
+        description: "Review a database migration PR for correctness and safety"
+        prompt: |
+          Review the migration PR diff in fixtures/migration-pr.diff.
+
+          This PR adds a database migration that modifies a production table.
+          Review for:
+          - Data loss risk
+          - Downtime implications
+          - Rollback safety
+          - Missing indexes or constraints
+          - Compatibility with running application code
+
+          Consider this is a zero-downtime deployment environment.
+        source_files:
+          - "fixtures/migration-pr.diff"
+        expected_findings:
+          - id: "column-rename"
+            description: "Identifies the column rename causing downtime"
+            required: true
+            points: 3
+          - id: "not-null-default"
+            description: "Identifies missing NOT NULL default for existing rows"
+            required: true
+            points: 3
+          - id: "missing-index"
+            description: "Identifies missing index on foreign key"
+            required: false
+            points: 2
+          - id: "safe-migration"
+            description: "Suggests safe migration strategy"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies the column rename causing downtime"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["rename", "column", "downtime", "application", "query"]
+            - name: "Identifies missing NOT NULL default for existing rows"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["NOT NULL", "default", "existing rows", "fail", "null"]
+            - name: "Identifies missing index on foreign key"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["index", "foreign key", "performance", "scan", "lookup"]
+            - name: "Suggests safe migration strategy"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["expand", "contract", "backfill", "two-phase", "deploy"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims data loss where none would occur"
+          - flag: "-I"
+            condition: "Approves migration without considering zero-downtime requirement"
+
+      - id: "cat12b-difficult"
+        difficulty: "difficult"
+        title: "Auth Logic Change Review"
+        description: "Review a PR that modifies authentication and authorization logic"
+        prompt: |
+          Review the PR diff in fixtures/auth-change-pr.diff.
+
+          This PR modifies the authentication middleware and role-based access control.
+          Review with extreme scrutiny for:
+          - Authorization bypasses
+          - Token validation weaknesses
+          - Role hierarchy violations
+          - Session management issues
+          - Any path where an unauthenticated user could access protected resources
+
+          This is a security-critical review. Err on the side of caution.
+        source_files:
+          - "fixtures/auth-change-pr.diff"
+        expected_findings:
+          - id: "jwt-alg-confusion"
+            description: "Identifies the JWT algorithm confusion vulnerability"
+            required: true
+            points: 4
+          - id: "role-bypass"
+            description: "Identifies the role check bypass on admin routes"
+            required: true
+            points: 3
+          - id: "missing-expiry"
+            description: "Identifies the missing token expiry check"
+            required: false
+            points: 2
+          - id: "block-with-fixes"
+            description: "Recommends blocking with specific fixes"
+            required: false
+            points: 1
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies the JWT algorithm confusion vulnerability"
+              points: 4
+              match_type: "keyword"
+              match_terms: ["algorithm", "alg", "none", "HS256", "RS256", "verify"]
+            - name: "Identifies the role check bypass on admin routes"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["role", "admin", "bypass", "OR", "AND", "operator"]
+            - name: "Identifies the missing token expiry check"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["expir", "exp", "token", "lifetime", "clock"]
+            - name: "Recommends blocking with specific fixes"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["block", "fix", "must", "critical"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims auth issues where the code is actually correct"
+          - flag: "-I"
+            condition: "Approves security-critical PR without catching vulnerabilities"
+
+      - id: "cat12b-hidden"
+        difficulty: "hidden"
+        title: "Safe Risky-Looking PR"
+        description: "A PR that looks risky but is actually well-tested and safe"
+        prompt: |
+          Review the PR diff in fixtures/safe-risky-pr.diff.
+          Also review fixtures/test-coverage.txt which shows test coverage for this PR.
+
+          This PR modifies critical payment processing logic.
+          Review for correctness and safety. Consider the test coverage data.
+
+          Provide your review with an approve/request-changes recommendation.
+        source_files:
+          - "fixtures/safe-risky-pr.diff"
+          - "fixtures/test-coverage.txt"
+        expected_findings:
+          - id: "well-tested"
+            description: "Recognizes the change is well-tested"
+            required: true
+            points: 3
+          - id: "approves"
+            description: "Approves or gives conditional approval"
+            required: true
+            points: 3
+          - id: "edge-cases"
+            description: "Notes the tests cover edge cases"
+            required: false
+            points: 2
+          - id: "no-over-flag"
+            description: "Does not over-flag non-issues"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Recognizes the change is well-tested"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["test", "coverage", "covered", "tested"]
+            - name: "Approves or gives conditional approval"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["approve", "LGTM", "looks good", "acceptable"]
+            - name: "Notes the tests cover edge cases"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["edge case", "boundary", "zero", "negative", "overflow"]
+            - name: "Does not over-flag non-issues"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["clean", "solid", "confident", "safe"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Invents phantom bugs in well-tested code to justify blocking"
+          - flag: "-I"
+            condition: "Ignores the test coverage data when making the review decision"

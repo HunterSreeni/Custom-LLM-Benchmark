@@ -1,0 +1,128 @@
+node:internal/process/promises:289
+            triggerUncaughtException(err, true /* fromPromise */);
+            ^
+
+[UnhandledPromiseRejection: This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). The promise rejected with the reason "Failed to enrich user data".] {
+  code: 'ERR_UNHANDLED_REJECTION'
+}
+
+Node.js v20.11.0
+
+--- Application Logs (stdout) ---
+
+[2026-04-03T14:00:01.123Z] INFO  server: Listening on port 3000
+[2026-04-03T14:00:15.456Z] INFO  router: POST /api/orders received - reqId=req-8812
+[2026-04-03T14:00:15.458Z] INFO  orderService: Creating order for userId=u_5531 - reqId=req-8812
+[2026-04-03T14:00:15.460Z] DEBUG orderService: Validating order items - reqId=req-8812
+[2026-04-03T14:00:15.465Z] INFO  orderService: Order validated, starting enrichment pipeline - reqId=req-8812
+[2026-04-03T14:00:15.466Z] DEBUG enrichmentPipeline: Starting 3 enrichment tasks in parallel - reqId=req-8812
+[2026-04-03T14:00:15.467Z] DEBUG enrichmentPipeline: Task 1 - fetchUserProfile started - reqId=req-8812
+[2026-04-03T14:00:15.467Z] DEBUG enrichmentPipeline: Task 2 - fetchLoyaltyPoints started - reqId=req-8812
+[2026-04-03T14:00:15.468Z] DEBUG enrichmentPipeline: Task 3 - fetchShippingPrefs started - reqId=req-8812
+[2026-04-03T14:00:15.890Z] DEBUG enrichmentPipeline: Task 1 - fetchUserProfile completed - reqId=req-8812
+[2026-04-03T14:00:16.102Z] DEBUG enrichmentPipeline: Task 3 - fetchShippingPrefs completed - reqId=req-8812
+[2026-04-03T14:00:17.470Z] ERROR loyaltyService: HTTP 503 from loyalty-api.internal/points/u_5531 - reqId=req-8812
+[2026-04-03T14:00:17.471Z] DEBUG enrichmentPipeline: Task 2 - fetchLoyaltyPoints FAILED - reqId=req-8812
+--- process crashed ---
+
+--- Source Code ---
+
+// file: src/services/orderService.js
+
+async function createOrder(userId, items) {
+    const validatedItems = await validateItems(items);
+
+    // Enrich order with user data from multiple sources
+    const enrichedData = await enrichOrder(userId);
+
+    const order = {
+        userId,
+        items: validatedItems,
+        ...enrichedData,
+        status: 'pending',
+        createdAt: new Date(),
+    };
+
+    return await db.orders.insert(order);
+}
+
+// file: src/services/enrichmentPipeline.js
+
+async function enrichOrder(userId) {
+    // BUG: Uses Promise.all but one of the inner functions has its own
+    // fire-and-forget promise that isn't included in the Promise.all.
+
+    const [profile, loyalty, shipping] = await Promise.all([
+        fetchUserProfile(userId),
+        fetchLoyaltyPoints(userId),
+        fetchShippingPrefs(userId),
+    ]);
+
+    return { profile, loyalty, shipping };
+}
+
+async function fetchUserProfile(userId) {
+    const response = await httpClient.get(`user-api.internal/users/${userId}`);
+    return response.data;
+}
+
+async function fetchLoyaltyPoints(userId) {
+    const response = await httpClient.get(`loyalty-api.internal/points/${userId}`);
+
+    // BUG: This fire-and-forget promise is NOT awaited and NOT caught.
+    // If updateLastAccessed fails, it creates an unhandled rejection.
+    // However, the VISIBLE error "Failed to enrich user data" actually
+    // comes from the HTTP 503 above - Promise.all rejects fast.
+    //
+    // The REAL unhandled rejection is from updateLastAccessed, which runs
+    // AFTER Promise.all has already rejected. Since the parent try/catch
+    // in createOrder only catches the Promise.all rejection, this orphaned
+    // promise has no handler.
+    updateLastAccessed(userId);  // fire-and-forget - no await, no .catch()
+
+    return response.data;
+}
+
+async function updateLastAccessed(userId) {
+    // This runs independently. If it fails, nothing catches it.
+    const result = await httpClient.put(`loyalty-api.internal/last-access/${userId}`, {
+        timestamp: new Date().toISOString(),
+    });
+
+    if (!result.ok) {
+        throw new Error("Failed to enrich user data");  // Misleading error message
+    }
+    return result;
+}
+
+async function fetchShippingPrefs(userId) {
+    const response = await httpClient.get(`shipping-api.internal/prefs/${userId}`);
+    return response.data;
+}
+
+// file: src/routes/orders.js
+
+router.post('/api/orders', async (req, res) => {
+    try {
+        const order = await createOrder(req.body.userId, req.body.items);
+        res.status(201).json(order);
+    } catch (err) {
+        // This catches the Promise.all rejection (HTTP 503 from loyalty service)
+        // but NOT the orphaned updateLastAccessed promise
+        logger.error(`Order creation failed: ${err.message}`);
+        res.status(500).json({ error: 'Order creation failed' });
+    }
+});
+
+--- Timeline of Events ---
+
+T+0ms    : Promise.all starts 3 tasks
+T+423ms  : fetchUserProfile resolves
+T+635ms  : fetchShippingPrefs resolves
+T+2003ms : fetchLoyaltyPoints gets HTTP 503 from loyalty-api
+T+2003ms : fetchLoyaltyPoints throws, Promise.all rejects immediately
+T+2003ms : updateLastAccessed was already fired at T+2003ms (before the throw)
+T+2003ms : The try/catch in router catches the Promise.all error
+T+2004ms : updateLastAccessed makes its HTTP PUT to the same degraded loyalty-api
+T+4100ms : updateLastAccessed gets a timeout/error, throws "Failed to enrich user data"
+T+4100ms : Nobody is listening for this rejection - CRASH

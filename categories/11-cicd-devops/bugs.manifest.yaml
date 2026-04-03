@@ -1,0 +1,57 @@
+category_id: 11
+category_name: "CI/CD, DevOps & Infrastructure Security"
+total_bugs: 2
+
+bugs:
+  - id: "bug-1"
+    challenge_id: "cat11a-hidden"
+    phase: "phase-a"
+    difficulty: "hidden"
+    type: "Secret Exposure"
+    severity: "critical"
+    title: "API secret exposed in plain text in wrangler.toml [vars] section"
+    description: |
+      The wrangler.toml configuration file has API_SECRET = "sk-prod-abc123def456ghi789"
+      in the [vars] section. The [vars] section in wrangler.toml is committed to version
+      control and deployed as plain-text environment variables. Secrets should never be
+      stored here - they should use `wrangler secret put` which stores them encrypted
+      in Cloudflare's dashboard, or be placed in a .dev.vars file (gitignored) for
+      local development.
+    file: "fixtures/phase-a/wrangler-toml.txt"
+    line: 10
+    vulnerable_code: |
+      [vars]
+      API_SECRET = "sk-prod-abc123def456ghi789"
+    entry_point: "wrangler.toml committed to repository"
+    exploit_example: |
+      Anyone with read access to the repository can see the production API secret.
+      This secret could be used to authenticate as the API and perform unauthorized actions.
+    fix: "Remove API_SECRET from [vars] and use `wrangler secret put API_SECRET` instead. Add a .dev.vars file (gitignored) for local development secrets."
+    verification: "Check wrangler.toml [vars] section for any values that look like secrets or API keys"
+
+  - id: "bug-2"
+    challenge_id: "cat11b-hidden"
+    phase: "phase-b"
+    difficulty: "hidden"
+    type: "Secret Leakage in Docker Layer"
+    severity: "high"
+    title: "Build secret printed to stdout and cached in Docker image layer"
+    description: |
+      The Dockerfile contains a debug line `RUN echo "Build secret: $BUILD_SECRET"`
+      in the builder stage. Even though this is a multi-stage build and the builder
+      stage is not the final image, the build log output contains the secret in
+      plain text. Additionally, if the builder image is cached or pushed to a registry,
+      the secret is visible via `docker history` on the builder stage. The secret is
+      also visible in CI/CD build logs.
+    file: "fixtures/phase-b/multi-stage-dockerfile"
+    line: 18
+    vulnerable_code: |
+      RUN echo "Build secret: $BUILD_SECRET"
+    entry_point: "Docker build process - build logs and layer cache"
+    exploit_example: |
+      1. Run: docker build --build-arg BUILD_SECRET=mysecret .
+      2. The build output shows: "Build secret: mysecret" in the console
+      3. CI/CD logs capture and store this output
+      4. If builder image is cached: docker history <builder-image> shows the command
+    fix: "Remove the debug echo line entirely. If build-time secrets are needed, use Docker BuildKit secrets: RUN --mount=type=secret,id=build_secret cat /run/secrets/build_secret"
+    verification: "Search Dockerfile for any RUN echo commands that reference build arguments or secrets"

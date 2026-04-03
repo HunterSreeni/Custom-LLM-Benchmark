@@ -1,0 +1,69 @@
+# Discovered Endpoints - app.techmart.local
+# Source: robots.txt, JS bundle analysis, API docs, manual probing
+# Date: 2026-04-02
+
+# === Authentication (public) ===
+POST   /api/auth/login
+POST   /api/auth/register
+POST   /api/auth/reset-password
+POST   /api/auth/verify-email
+POST   /api/auth/refresh-token
+POST   /api/auth/logout
+
+# === Users (authenticated) ===
+GET    /api/users/me
+GET    /api/users/{id}/profile
+PUT    /api/users/{id}/avatar
+PUT    /api/users/{id}/settings
+
+# === Products ===
+GET    /api/products
+GET    /api/products/{id}
+GET    /api/products/{id}/reviews
+GET    /api/products/search?q=
+POST   /api/products/{id}/reviews          (authenticated)
+
+# === Cart (authenticated) ===
+GET    /api/cart
+POST   /api/cart
+DELETE /api/cart/{item_id}
+POST   /api/cart/checkout
+
+# === Orders (authenticated) ===
+GET    /api/orders
+GET    /api/orders/{id}
+GET    /api/orders/{id}/status
+
+# === Notifications ===
+GET    /api/notifications
+WS     /ws/notifications                   (WebSocket, authenticated)
+
+# === Discovered via robots.txt (disallowed) ===
+GET    /admin/                             (302 -> /admin/login)
+GET    /admin/dashboard                    (403 Forbidden)
+GET    /admin/users                        (403 Forbidden)
+GET    /admin/config                       (403 Forbidden)
+GET    /api/internal/metrics               (403 Forbidden)
+GET    /api/internal/health                (200 - returns JSON health check)
+GET    /debug/                             (404 Not Found)
+GET    /debug/pprof/                       (200 - Go pprof interface!)
+GET    /debug/vars                         (200 - Go expvar output!)
+GET    /api/v2/                            (200 - returns API v2 info)
+GET    /api/v2/graphql                     (200 - GraphQL playground)
+GET    /server-status                      (403 Forbidden)
+
+# === Other Discovered ===
+GET    /api/openapi.yaml                   (200 - full API spec)
+GET    /docs                               (200 - Swagger UI)
+GET    /sitemap.xml                        (200)
+GET    /static/js/app.bundle.min.js        (200 - main JS bundle)
+GET    /health                             (200 - public health check)
+GET    /.well-known/security.txt           (404)
+
+# === Notes ===
+# - /debug/pprof/ is OPEN and exposes Go profiling data (critical finding)
+# - /debug/vars exposes application metrics and internal state
+# - /api/internal/health returns DB connection status, uptime, memory usage
+# - /api/v2/ is accessible but undocumented externally
+# - /admin/ redirects to login page, suggesting admin panel exists
+# - WebSocket at /ws/notifications requires JWT in query param ?token=

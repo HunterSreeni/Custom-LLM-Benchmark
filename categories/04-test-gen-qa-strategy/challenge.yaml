@@ -1,0 +1,667 @@
+category:
+  id: 4
+  name: "Test Generation & QA Strategy"
+  slug: "test-gen-qa-strategy"
+  type: "2-phase"
+  tech_stack: ["Python", "pytest", "JavaScript", "jest", "TypeScript", "vitest"]
+
+phases:
+  # ============================================================
+  # PHASE A - Test Code Generation
+  # ============================================================
+  - id: "a"
+    name: "Test Code Generation"
+    challenges:
+      - id: "cat4-a-easy"
+        difficulty: "easy"
+        title: "Unit Test a Pure Function"
+        description: "Write unit tests for the _calculate_backoff helper in the Python API client"
+        prompt: |
+          Write pytest unit tests for the `_calculate_backoff` static method in the ApiClient class.
+
+          The method signature is:
+            _calculate_backoff(attempt: int, base_delay: float = 0.5) -> float
+
+          It returns: base_delay * 2^attempt + random jitter in [0, base_delay).
+
+          Cover:
+          - Attempt 0, 1, 2 (verify exponential growth)
+          - Custom base_delay values
+          - Verify jitter is bounded (>= base_delay * 2^attempt and < base_delay * 2^attempt + base_delay)
+          - Edge case: attempt = 0 with base_delay = 0
+
+          Write clean, well-structured pytest tests. Use descriptive test names.
+        source_files:
+          - "modules/python/api_client.py"
+        expected_findings:
+          - id: "backoff-exponential"
+            description: "Tests verify exponential growth pattern across attempts"
+            required: true
+            points: 4
+          - id: "backoff-jitter-bounds"
+            description: "Tests verify jitter stays within [0, base_delay) range"
+            required: true
+            points: 4
+          - id: "backoff-edge-cases"
+            description: "Tests cover edge cases like zero base_delay"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Tests exponential growth for attempts 0, 1, 2"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["attempt", "backoff", "exponential", "2 **"]
+            - name: "Validates jitter bounds correctly"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["jitter", "random", "assert", "bound"]
+            - name: "Uses descriptive test names and structure"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["def test_", "pytest"]
+            - name: "Covers edge cases (zero delay, large attempt)"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["base_delay", "0", "edge"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Tests methods that do not exist on ApiClient"
+          - flag: "-I"
+            condition: "Ignores instruction to focus on _calculate_backoff"
+
+      - id: "cat4-a-medium"
+        difficulty: "medium"
+        title: "Mock HTTP and Test Retry Logic"
+        description: "Mock external HTTP calls in the Python API client and test error paths and retry behavior"
+        prompt: |
+          Write pytest tests for the ApiClient class that mock the HTTP session
+          and verify the retry and error-handling logic.
+
+          Cover these scenarios:
+          1. Successful GET/POST/DELETE requests (mock session returns 200 with JSON)
+          2. Retry on 500/502/503 errors - verify the client retries up to MAX_RETRIES times
+          3. Rate limiting (429) with Retry-After header - verify the client waits the specified duration
+          4. Rate limiting (429) without Retry-After header - verify fallback to exponential backoff
+          5. Non-retryable error (e.g., 404) raises ApiError immediately without retry
+          6. Network exception (e.g., ConnectionError) triggers retry then raises ApiError
+
+          Use unittest.mock to mock the session object. Verify:
+          - Number of calls to session.request
+          - That ApiError contains correct status_code and retries_attempted
+          - That time.sleep is called with appropriate delays (mock time.sleep)
+
+          Write clean, well-organized tests with clear assertions.
+        source_files:
+          - "modules/python/api_client.py"
+        expected_findings:
+          - id: "mock-session"
+            description: "Properly mocks the HTTP session and its response objects"
+            required: true
+            points: 3
+          - id: "retry-count"
+            description: "Verifies correct number of retry attempts for retryable errors"
+            required: true
+            points: 3
+          - id: "rate-limit-handling"
+            description: "Tests both 429 with Retry-After and 429 without it"
+            required: true
+            points: 2
+          - id: "error-assertions"
+            description: "Checks ApiError attributes (status_code, retries_attempted)"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Mocks session.request with side_effect or return_value"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["mock", "Mock", "side_effect", "return_value"]
+            - name: "Tests retry on server errors (500, 502, 503)"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["retry", "500", "502", "503", "call_count"]
+            - name: "Tests 429 with Retry-After header"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["429", "Retry-After", "rate"]
+            - name: "Tests non-retryable errors raise immediately"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["404", "ApiError", "raises"]
+            - name: "Verifies time.sleep called during retry"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["time.sleep", "patch", "mock"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Makes real HTTP requests instead of mocking"
+          - flag: "-I"
+            condition: "Does not test retry logic as instructed"
+
+      - id: "cat4-a-hard"
+        difficulty: "hard"
+        title: "Test Event Delegation with Dynamic DOM Elements"
+        description: "Write tests for delegateEvent in dom-utils.js that cover dynamic element scenarios"
+        prompt: |
+          Write jest tests for the `delegateEvent` function from dom-utils.js.
+
+          The function signature is:
+            delegateEvent(parent, selector, event, handler)
+
+          It sets up event delegation on a parent element so that events on children
+          matching the CSS selector trigger the handler - even for elements added after
+          the listener is attached.
+
+          Write tests covering:
+          1. Click on a direct child matching the selector triggers the handler
+          2. Click on a nested element inside a matching child (event bubbles up)
+          3. Click on an element NOT matching the selector does NOT trigger the handler
+          4. Dynamically added elements (after delegateEvent is called) still trigger the handler
+          5. Handler receives the correct event object and matched target element
+          6. Elements outside the parent but matching the selector are ignored
+          7. Multiple delegates on the same parent with different selectors
+
+          Use jsdom (jest's default environment). Create real DOM elements for testing.
+          Use dispatchEvent with new Event() or new MouseEvent() to simulate clicks.
+
+          Write thorough, well-structured tests.
+        source_files:
+          - "modules/javascript/dom-utils.js"
+        expected_findings:
+          - id: "dynamic-element-test"
+            description: "Tests that dynamically added elements trigger the delegated handler"
+            required: true
+            points: 4
+          - id: "bubble-test"
+            description: "Tests event bubbling from nested child to matching parent"
+            required: true
+            points: 3
+          - id: "non-matching-ignored"
+            description: "Verifies non-matching elements do not trigger the handler"
+            required: false
+            points: 3
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Creates real DOM elements for testing"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["createElement", "appendChild", "document"]
+            - name: "Tests dynamic element scenario"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["dynamic", "appendChild", "after", "delegateEvent"]
+            - name: "Tests event bubbling through nested elements"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["nested", "bubble", "closest", "child"]
+            - name: "Uses dispatchEvent to simulate user interaction"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["dispatchEvent", "Event", "MouseEvent", "click"]
+            - name: "Verifies handler arguments (event, target)"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["handler", "target", "toHaveBeenCalledWith"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Uses a testing library that simulates DOM without real element creation"
+          - flag: "-I"
+            condition: "Does not test dynamic element addition"
+
+      - id: "cat4-a-difficult"
+        difficulty: "difficult"
+        title: "Integration Tests for Form State Machine"
+        description: "Write integration tests for the FormValidator covering multi-step workflows with rollback"
+        prompt: |
+          Write vitest (or jest) integration tests for the FormValidator class in form-validator.ts.
+
+          Test the following multi-step workflows:
+
+          1. **Happy path**: idle -> input all fields -> valid -> submit -> submitted
+             - Verify state transitions at each step
+             - Verify snapshot contains correct fields and no errors after valid input
+
+          2. **Validation failure -> correction**: idle -> input invalid email -> invalid -> fix email -> valid
+             - Verify error messages appear and disappear correctly
+
+          3. **Submit failure with rollback**: idle -> fill all -> valid -> submit (handler throws) -> error -> reset(rollback=true) -> restores previous valid state
+             - Verify the rollback restores the exact previous snapshot
+
+          4. **Multiple submit attempts**: fill -> submit (fail) -> reset -> fill again -> submit (success) -> submitted
+             - Verify submitCount increments correctly
+
+          5. **State machine boundary**: cannot submit from idle/invalid states
+             - Calling submit() when in invalid state should return invalid snapshot
+
+          For each workflow, assert:
+          - The state field after each transition
+          - The errors array content
+          - The fields object values
+          - The submitCount value
+
+          Use TypeScript. Import FormValidator from the module.
+          Mock the onSubmit callback to control success/failure.
+        source_files:
+          - "modules/typescript/form-validator.ts"
+        expected_findings:
+          - id: "full-workflow"
+            description: "Tests complete happy-path workflow through all state transitions"
+            required: true
+            points: 3
+          - id: "rollback-test"
+            description: "Tests reset(rollback=true) restores previous snapshot after error"
+            required: true
+            points: 3
+          - id: "submit-count"
+            description: "Verifies submitCount increments across multiple attempts"
+            required: false
+            points: 2
+          - id: "boundary-test"
+            description: "Tests that submit from invalid state stays invalid"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Tests full happy-path state transitions"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["idle", "valid", "submitting", "submitted"]
+            - name: "Tests rollback on error"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["rollback", "reset", "error", "previous"]
+            - name: "Verifies snapshot fields and errors at each step"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["snapshot", "errors", "fields", "state"]
+            - name: "Tests multiple submit attempts with submitCount"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["submitCount", "submit", "twice", "multiple"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Tests non-existent methods or properties"
+          - flag: "-I"
+            condition: "Does not test multi-step workflows as instructed"
+
+      - id: "cat4-a-hidden"
+        difficulty: "hidden"
+        title: "Catch the Type Lie in Form Validator"
+        description: "Write tests that expose the null/string type mismatch in the email field at runtime"
+        prompt: |
+          Write thorough tests for the FormValidator class in form-validator.ts.
+
+          Focus on testing the constructor defaults and validation behavior for ALL fields,
+          including what happens when fields are not explicitly provided.
+
+          Consider:
+          - What are the actual runtime values of each field after construction?
+          - What happens when you validate without setting any fields first?
+          - Do the TypeScript types match what actually exists at runtime?
+          - What happens when optional fields are left untouched and validation runs?
+
+          Write tests that actually call the validation methods and check for runtime errors,
+          not just type-level checks. Pay attention to the constructor implementation.
+        source_files:
+          - "modules/typescript/form-validator.ts"
+        expected_findings:
+          - id: "type-lie-detected"
+            description: "Test reveals that email field is null at runtime despite string type annotation"
+            required: true
+            points: 7
+          - id: "runtime-error-caught"
+            description: "Test demonstrates TypeError when validating untouched email field"
+            required: true
+            points: 3
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies email field is null despite string type"
+              points: 4
+              match_type: "keyword"
+              match_terms: ["null", "email", "string", "type"]
+            - name: "Tests default constructor produces runtime null"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["default", "constructor", "null", "email"]
+            - name: "Catches TypeError on .trim() of null value"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["TypeError", "trim", "null", "runtime"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims the code is correct when it has a type lie"
+          - flag: "-I"
+            condition: "Only checks types at compile time, does not test runtime behavior"
+
+  # ============================================================
+  # PHASE B - QA Strategy
+  # ============================================================
+  - id: "b"
+    name: "QA Strategy"
+    challenges:
+      - id: "cat4-b-easy"
+        difficulty: "easy"
+        title: "Test Case Design for Login Flow"
+        description: "Write positive, negative, and boundary test cases for a login feature"
+        prompt: |
+          Given the following feature specification for a login flow, write comprehensive test cases.
+
+          Organize your test cases into three categories:
+          1. **Positive test cases** - valid inputs that should succeed
+          2. **Negative test cases** - invalid inputs that should fail gracefully
+          3. **Boundary test cases** - edge cases at the limits of valid input
+
+          For each test case, provide:
+          - Test ID (TC-001, TC-002, etc.)
+          - Title
+          - Preconditions
+          - Steps
+          - Expected Result
+
+          Cover all requirements from the spec including authentication, rate limiting,
+          error messages, and the "Remember Me" / "Forgot Password" features.
+        source_files:
+          - "fixtures/login-spec.md"
+        expected_findings:
+          - id: "positive-cases"
+            description: "Covers valid login, remember me checked/unchecked"
+            required: true
+            points: 3
+          - id: "negative-cases"
+            description: "Covers wrong password, invalid email, empty fields, locked account"
+            required: true
+            points: 3
+          - id: "boundary-cases"
+            description: "Covers email at max length, password at min/max, rate limit at exactly 5 attempts"
+            required: true
+            points: 4
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Positive cases cover happy path and Remember Me"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["valid", "login", "Remember Me", "success"]
+            - name: "Negative cases cover invalid credentials and empty fields"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["invalid", "wrong", "empty", "error"]
+            - name: "Tests the rate limiting at 5 failed attempts"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["rate", "limit", "5", "locked", "15 minutes"]
+            - name: "Boundary tests for field length limits"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["254", "boundary", "max", "min", "8 characters"]
+            - name: "Uses structured format with IDs, steps, expected results"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["TC-", "Steps", "Expected", "Precondition"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Invents requirements not in the spec"
+          - flag: "-I"
+            condition: "Does not organize into positive/negative/boundary categories"
+
+      - id: "cat4-b-medium"
+        difficulty: "medium"
+        title: "Full Test Plan for CSV Export Feature"
+        description: "Produce a complete test plan with scope, approach, entry/exit criteria, and risk areas"
+        prompt: |
+          Given the following PRD for a new "Export to CSV" feature, produce a full test plan document.
+
+          Include these sections:
+          1. **Scope** - what is in scope and out of scope for testing
+          2. **Test Approach** - testing levels (unit, integration, e2e), tools, environments
+          3. **Entry Criteria** - what must be true before testing begins
+          4. **Exit Criteria** - what must be true before sign-off
+          5. **Test Cases** - categorized by feature area (on-demand export, scheduled export, validation, security, edge cases)
+          6. **Risk Areas** - identify the highest-risk areas and mitigation strategies
+          7. **Resource Estimates** - approximate effort in person-days
+
+          Be specific and reference the PRD requirements by ID (US-1, US-2, etc.).
+        source_files:
+          - "fixtures/csv-export-prd.md"
+        expected_findings:
+          - id: "structured-plan"
+            description: "Plan has all 7 required sections"
+            required: true
+            points: 3
+          - id: "risk-identification"
+            description: "Identifies high-risk areas like large exports, concurrent access, email delivery"
+            required: true
+            points: 3
+          - id: "prd-traceability"
+            description: "References PRD requirements by ID"
+            required: false
+            points: 2
+          - id: "security-testing"
+            description: "Includes RBAC and signed URL testing in the plan"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "All 7 sections present and substantive"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["Scope", "Approach", "Entry Criteria", "Exit Criteria", "Risk"]
+            - name: "References PRD requirements (US-1, US-2, etc.)"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["US-1", "US-2", "US-3"]
+            - name: "Identifies key risks (large data, concurrency, email)"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["100k", "concurrent", "email", "risk"]
+            - name: "Covers security (RBAC, signed URLs, audit)"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["RBAC", "role", "signed", "audit"]
+            - name: "Provides realistic resource estimates"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["person-day", "estimate", "effort"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Invents features not in the PRD"
+          - flag: "-I"
+            condition: "Missing required sections from the plan template"
+
+      - id: "cat4-b-hard"
+        difficulty: "hard"
+        title: "Regression Test Selection from Code Diff"
+        description: "Given a diff and full test suite, identify the minimal regression set with justification"
+        prompt: |
+          You are given:
+          1. A code diff that modifies the authentication middleware to add rate limiting
+          2. A full test suite of 200 tests
+
+          The diff touches three files:
+          - `src/middleware/auth.middleware.ts` - adds rate limiting checks before auth
+          - `src/utils/rate-limiter.ts` - new file implementing a singleton rate limiter
+          - `src/stores/session.store.ts` - adds `rateLimitBucket` field and `destroyAllForUser` method
+
+          Analyze the diff and the test suite list. Then:
+
+          1. Identify the MINIMAL set of tests that must run to cover the changes
+          2. For each selected test, provide a 1-line justification of why it is needed
+          3. Identify any tests that are NOT in the suite but SHOULD exist (gaps)
+          4. Estimate the risk of skipping the remaining tests
+
+          Be precise - do not select tests that are unrelated to the changed code.
+          Reference tests by their ID (T001, T002, etc.).
+        source_files:
+          - "fixtures/auth-diff.patch"
+          - "fixtures/test-suite-list.txt"
+        expected_findings:
+          - id: "auth-tests-selected"
+            description: "Selects auth module tests (T001-T015) as directly impacted"
+            required: true
+            points: 3
+          - id: "rate-limiter-tests"
+            description: "Selects rate-limiter tests (T031-T040) for the new module"
+            required: true
+            points: 3
+          - id: "session-tests"
+            description: "Selects relevant session tests (T016-T030) for session.store changes"
+            required: true
+            points: 2
+          - id: "gap-analysis"
+            description: "Identifies missing integration tests for auth + rate limiting together"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Selects auth tests with justification"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["T001", "T004", "auth", "middleware"]
+            - name: "Selects rate-limiter tests"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["T031", "T033", "rate-limiter", "rate limit"]
+            - name: "Selects impacted session tests"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["T028", "session", "destroyAll"]
+            - name: "Identifies test gaps"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["gap", "missing", "integration", "should exist"]
+            - name: "Does not over-select unrelated tests"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["minimal", "skip", "unrelated"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Selects all 200 tests without analysis"
+          - flag: "-I"
+            condition: "Does not reference specific test IDs as instructed"
+
+      - id: "cat4-b-difficult"
+        difficulty: "difficult"
+        title: "Defect Triage and Classification"
+        description: "Classify 10 bug reports by severity/priority, identify duplicates and feature requests"
+        prompt: |
+          You are a QA lead performing defect triage. Given the following 10 bug reports,
+          perform the following analysis:
+
+          1. **Classify each bug** by:
+             - Severity: Critical / Major / Minor / Trivial
+             - Priority: P1 (fix immediately) / P2 (fix this sprint) / P3 (fix next sprint) / P4 (backlog)
+
+          2. **Identify duplicates** - which reports describe the same underlying issue?
+
+          3. **Flag feature requests** - which reports are not actually bugs but feature requests
+             that were filed as bugs?
+
+          4. **Provide a triage summary** with:
+             - Recommended sprint plan (which bugs to fix first)
+             - Any bugs that need more information before they can be fixed
+             - Suggested assignee teams (Frontend, Backend, Infrastructure)
+
+          For each classification, provide a brief rationale.
+        source_files:
+          - "fixtures/bug-reports.md"
+        expected_findings:
+          - id: "duplicates-found"
+            description: "Identifies BUG-101 and BUG-106 as duplicates (both Firefox chart rendering)"
+            required: true
+            points: 3
+          - id: "feature-requests-found"
+            description: "Identifies BUG-103 (dark mode) and BUG-107 (drag-and-drop) as feature requests"
+            required: true
+            points: 3
+          - id: "severity-classification"
+            description: "Correctly classifies severity (e.g., BUG-102 as Major, BUG-104 as Major, BUG-110 as Major)"
+            required: true
+            points: 2
+          - id: "priority-assignment"
+            description: "Assigns appropriate priorities with rationale"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies BUG-101 and BUG-106 as duplicates"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["BUG-101", "BUG-106", "duplicate"]
+            - name: "Flags BUG-103 and BUG-107 as feature requests"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["BUG-103", "BUG-107", "feature request"]
+            - name: "Provides severity for each bug with rationale"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["Critical", "Major", "Minor", "severity"]
+            - name: "Assigns priorities and recommends sprint plan"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["P1", "P2", "sprint", "priority"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Misidentifies real bugs as feature requests or vice versa"
+          - flag: "-I"
+            condition: "Does not identify duplicates or feature requests as instructed"
+
+      - id: "cat4-b-hidden"
+        difficulty: "hidden"
+        title: "Catch the Spec Ambiguity"
+        description: "Write test cases for a sorting spec that contains a logical contradiction"
+        prompt: |
+          Given the following product sorting specification, write comprehensive test cases
+          for the "Sort by Price: Low to High" feature.
+
+          Write test cases that cover:
+          1. Basic ascending price order
+          2. Stable sort for equal prices
+          3. Free product handling
+          4. Null price handling
+          5. Empty product list
+          6. Single product list
+
+          For each test case, provide the input data, the expected output, and a brief rationale.
+
+          If you find any ambiguities or contradictions in the spec, call them out explicitly
+          and explain how they affect your test cases.
+        source_files:
+          - "fixtures/product-sort-spec.md"
+        expected_findings:
+          - id: "contradiction-found"
+            description: "Identifies that 'free products at the end' contradicts 'lowest price first' since $0 is the lowest price"
+            required: true
+            points: 7
+          - id: "test-cases-written"
+            description: "Still writes test cases despite the ambiguity, noting assumptions"
+            required: false
+            points: 3
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies the free-product-vs-lowest-price contradiction"
+              points: 5
+              match_type: "keyword"
+              match_terms: ["contradict", "ambiguity", "free", "$0", "lowest"]
+            - name: "Explains why $0 at the end conflicts with ascending sort"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["$0", "ascending", "end", "first", "conflict"]
+            - name: "Writes test cases with explicit assumptions"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["assumption", "test case", "clarif"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims the spec is perfectly clear with no issues"
+          - flag: "-I"
+            condition: "Does not analyze the spec for contradictions despite writing test cases"

@@ -1,0 +1,50 @@
+fake_functions:
+  - function: "express.Router.validateMiddleware()"
+    library: "Express.js"
+    description: "Built-in middleware validation that checks handler signatures"
+    why_fake: "Express has no built-in validateMiddleware method"
+
+  - function: "pd.DataFrame.to_schema()"
+    library: "pandas"
+    description: "Exports the DataFrame column types and constraints as a JSON schema"
+    why_fake: "pandas has no to_schema method on DataFrame"
+
+  - function: "np.array.autodiff()"
+    library: "NumPy"
+    description: "Computes automatic differentiation of array operations"
+    why_fake: "NumPy has no autodiff method; automatic differentiation requires JAX or autograd"
+
+  - function: "React.useServerState()"
+    library: "React"
+    description: "Hook for managing state that syncs between server and client components"
+    why_fake: "React has no useServerState hook; this is a fabricated API"
+
+  - function: "requests.Session.retry_strategy()"
+    library: "requests (Python)"
+    description: "Configures automatic retry behavior with exponential backoff on the session"
+    why_fake: "requests.Session has no retry_strategy method; retries require urllib3 Retry adapter"
+
+  - function: "lodash.deepMergeCircular()"
+    library: "Lodash"
+    description: "Deep merges objects while handling circular references automatically"
+    why_fake: "Lodash has no deepMergeCircular function; _.merge does not handle circular refs"
+
+  - function: "torch.Tensor.to_sparse_coo()"
+    library: "PyTorch"
+    description: "Converts a dense tensor to sparse COO format with automatic index deduplication"
+    why_fake: "PyTorch uses to_sparse() not to_sparse_coo(); the method name is fabricated"
+
+  - function: "fs.promises.watchDirectory()"
+    library: "Node.js (fs module)"
+    description: "Returns an async iterator that yields filesystem change events for a directory"
+    why_fake: "Node.js fs.promises has no watchDirectory; fs.watch exists but is not promise-based"
+
+  - function: "django.db.models.QuerySet.explain_analyze()"
+    library: "Django ORM"
+    description: "Runs EXPLAIN ANALYZE on the query and returns execution plan with timing data"
+    why_fake: "Django QuerySet has explain() but not explain_analyze(); ANALYZE is a parameter to explain()"
+
+  - function: "processEventQueue()"
+    library: "Express.js"
+    description: "Internal function that processes queued middleware events in order"
+    why_fake: "Express.js has no processEventQueue function in its codebase"

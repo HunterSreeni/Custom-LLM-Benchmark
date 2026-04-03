@@ -1,0 +1,75 @@
+# WebSocket Handshake Capture
+# Endpoint: wss://app.techmart.local/ws/notifications?token=<jwt>
+# Captured with: websocat + custom logger
+
+# === Upgrade Request ===
+GET /ws/notifications?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo0Miwicm9sZSI6InVzZXIiLCJleHAiOjE3NDM4MDY0MDB9.fake HTTP/1.1
+Host: app.techmart.local
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+Sec-WebSocket-Version: 13
+Sec-WebSocket-Protocol: techmart-v1
+Origin: https://app.techmart.local
+
+# === Upgrade Response ===
+HTTP/1.1 101 Switching Protocols
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
+Sec-WebSocket-Protocol: techmart-v1
+X-WS-Session-ID: ws-42-a8f3b2c1
+X-WS-User-ID: 42
+X-WS-User-Role: user
+
+# === Initial Server Message (after handshake) ===
+{
+  "type": "connection_established",
+  "session_id": "ws-42-a8f3b2c1",
+  "user_id": 42,
+  "server_time": "2026-04-03T10:30:15.221Z",
+  "metadata": {
+    "flag": "FLAG{ws_handshake_m3ta}",
+    "server_version": "2.4.1-beta",
+    "go_version": "go1.22.1",
+    "active_connections": 147,
+    "max_connections": 10000,
+    "db_status": "healthy",
+    "db_path": "/opt/techmart/data/techmart.db",
+    "uptime_seconds": 1234567,
+    "memory_usage_mb": 256,
+    "goroutines": 892,
+    "subscriptions": ["orders", "promotions", "system"],
+    "user_preferences": {
+      "notification_email": true,
+      "notification_push": false
+    }
+  }
+}
+
+# === Subsequent Messages (sample) ===
+# Server -> Client
+{
+  "type": "notification",
+  "id": "notif-7891",
+  "category": "order",
+  "title": "Order #1234 shipped",
+  "body": "Your order has been shipped via FedEx. Tracking: FX123456789",
+  "timestamp": "2026-04-03T10:31:02.115Z",
+  "read": false
+}
+
+# Client -> Server (ping)
+{"type": "ping", "timestamp": "2026-04-03T10:31:30.000Z"}
+
+# Server -> Client (pong)
+{"type": "pong", "timestamp": "2026-04-03T10:31:30.002Z", "latency_ms": 2}
+
+# === Notes ===
+# - JWT token is passed in query string (visible in server logs and proxy logs)
+# - WebSocket handshake response leaks user role in X-WS-User-Role header
+# - Initial metadata message exposes extensive server internals
+# - No origin validation observed (tested from different origin - accepted)
+# - No message rate limiting on client -> server
+# - Subscription channels are server-assigned, but client can send:
+#   {"type": "subscribe", "channel": "admin"} and it appears to work

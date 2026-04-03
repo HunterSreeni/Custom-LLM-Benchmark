@@ -1,0 +1,39 @@
+category:
+  id: 10
+  name: "Stress and Reliability"
+  slug: "stress-reliability"
+  type: "standard"
+  description: "Tests LLM behavior under adversarial, ambiguous, and stress conditions - hallucination detection, prompt injection resistance, contradictory instructions, and more."
+  tech_stack: ["Language-agnostic"]
+
+phases:
+  - id: "10a"
+    name: "Prompt Injection Resistance"
+    status: "planned"
+    description: "Tests resistance to prompt injection and jailbreak attempts. Coming in Phase 4."
+
+  - id: "10b"
+    name: "Hallucination Detection"
+    status: "active"
+    description: "Tests whether the LLM fabricates information about non-existent CVEs, packages, APIs, or functions."
+    challenge_file: "10b-hallucination/challenge.yaml"
+
+  - id: "10c"
+    name: "Contradictory Instructions"
+    status: "planned"
+    description: "Tests behavior when given conflicting requirements. Coming in Phase 4."
+
+  - id: "10d"
+    name: "Context Window Stress"
+    status: "planned"
+    description: "Tests performance degradation with large context windows. Coming in Phase 4."
+
+  - id: "10e"
+    name: "Ambiguity Handling"
+    status: "planned"
+    description: "Tests whether the LLM asks for clarification vs making assumptions. Coming in Phase 4."
+
+  - id: "10f"
+    name: "Graceful Failure"
+    status: "planned"
+    description: "Tests behavior when asked to do impossible or unsupported tasks. Coming in Phase 4."

@@ -1,0 +1,615 @@
+category:
+  id: 13
+  name: "Supply Chain & Dependency Security"
+  slug: "supply-chain"
+  type: "2-phase"
+  tech_stack: ["npm/package.json", "pip/requirements.txt", "Go modules", "lockfile analysis", "CVE databases"]
+
+phases:
+  - id: "a"
+    name: "Dependency Audit"
+    challenges:
+      - id: "cat13a-easy"
+        difficulty: "easy"
+        title: "Known CVE Identification in package.json"
+        description: "Identify npm dependencies with known CVEs in a package.json"
+        prompt: |
+          Review the following package.json file in fixtures/vulnerable-package.json.
+
+          This is a Node.js application with 20 production dependencies. Your task is to
+          identify which dependencies have known security vulnerabilities (CVEs).
+
+          For each vulnerable dependency, provide:
+          - Package name and version
+          - CVE identifier (if known)
+          - Type of vulnerability
+          - Severity level
+          - Recommended fix version
+        source_files:
+          - "fixtures/vulnerable-package.json"
+        expected_findings:
+          - id: "lodash-vuln"
+            description: "Identifies lodash@4.17.19 prototype pollution"
+            required: true
+            points: 3
+          - id: "minimist-vuln"
+            description: "Identifies minimist@0.2.1 prototype pollution"
+            required: true
+            points: 3
+          - id: "node-fetch-vuln"
+            description: "Identifies node-fetch@2.6.0 vulnerability"
+            required: true
+            points: 2
+          - id: "fix-versions"
+            description: "Recommends specific fix versions"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies lodash@4.17.19 prototype pollution"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["lodash", "4.17.19", "prototype pollution", "CVE-2020-28500", "CVE-2021-23337"]
+            - name: "Identifies minimist@0.2.1 prototype pollution"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["minimist", "0.2.1", "prototype pollution", "CVE-2021-44906", "CVE-2020-7598"]
+            - name: "Identifies node-fetch@2.6.0 vulnerability"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["node-fetch", "2.6.0", "ReDoS", "CVE-2022-0235", "exposure"]
+            - name: "Recommends specific fix versions"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["upgrade", "4.17.21", "1.2.6", "2.6.7", "latest", "patch"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims vulnerabilities in packages that are at safe versions"
+            - flag: "-I"
+              condition: "Fails to identify any of the three vulnerable packages"
+
+      - id: "cat13a-medium"
+        difficulty: "medium"
+        title: "Typosquatting Detection in requirements.txt"
+        description: "Spot typosquatted packages in a Python requirements file"
+        prompt: |
+          Review the following Python requirements.txt file in fixtures/typosquatted-requirements.txt.
+
+          This file lists dependencies for a Flask backend API. Some packages may be
+          typosquatted - meaning they have names that are very similar to legitimate
+          packages but are actually different (potentially malicious) packages.
+
+          For each suspicious package, provide:
+          - The suspicious package name and version
+          - What legitimate package it likely impersonates
+          - How to verify if it is a typosquat
+          - The risk if installed
+        source_files:
+          - "fixtures/typosquatted-requirements.txt"
+        expected_findings:
+          - id: "requsets-typo"
+            description: "Identifies requsets as typosquat of requests"
+            required: true
+            points: 4
+          - id: "dateutl-typo"
+            description: "Identifies python-dateutl as typosquat of python-dateutil"
+            required: true
+            points: 4
+          - id: "risk-explanation"
+            description: "Explains the risk of typosquatting"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies requsets as typosquat of requests"
+              points: 4
+              match_type: "keyword"
+              match_terms: ["requsets", "requests", "typosquat", "misspell", "typo"]
+            - name: "Identifies python-dateutl as typosquat of python-dateutil"
+              points: 4
+              match_type: "keyword"
+              match_terms: ["dateutl", "dateutil", "typosquat", "misspell", "typo"]
+            - name: "Explains the risk of typosquatting"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["malicious", "code execution", "exfiltrate", "backdoor", "install"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Flags legitimate packages as typosquats"
+            - flag: "-I"
+              condition: "Misses both typosquatted packages"
+
+      - id: "cat13a-hard"
+        difficulty: "hard"
+        title: "Lockfile Drift Detection"
+        description: "Find version drift between package.json and package-lock.json"
+        prompt: |
+          Review both fixtures/drifted-package.json and fixtures/drifted-package-lock.json.
+
+          The package.json specifies dependency version ranges, and the package-lock.json
+          records the exact resolved versions. Analyze the lockfile for:
+
+          1. Any resolved versions that have known CVEs
+          2. Version drift where the lockfile pins a vulnerable version despite
+             the range allowing a patched version
+          3. Whether running `npm install` vs `npm ci` would produce different results
+
+          Focus on security implications of the locked versions.
+        source_files:
+          - "fixtures/drifted-package.json"
+          - "fixtures/drifted-package-lock.json"
+        expected_findings:
+          - id: "express-cve"
+            description: "Identifies express@4.18.2 path traversal or related CVE"
+            required: true
+            points: 3
+          - id: "lockfile-drift"
+            description: "Explains lockfile drift concept"
+            required: true
+            points: 3
+          - id: "npm-ci-vs-install"
+            description: "Distinguishes npm install vs npm ci"
+            required: true
+            points: 2
+          - id: "remediation"
+            description: "Recommends remediation"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies express@4.18.2 path traversal or related CVE"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["express", "4.18.2", "CVE", "path traversal", "vulnerability", "serve-static"]
+            - name: "Explains lockfile drift concept"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["drift", "locked", "resolved", "pinned", "range", "caret"]
+            - name: "Distinguishes npm install vs npm ci"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["npm ci", "npm install", "lockfile", "deterministic", "fresh"]
+            - name: "Recommends remediation"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["update", "npm audit fix", "regenerate", "override", "resolution"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims all locked versions are vulnerable without checking CVEs"
+            - flag: "-I"
+              condition: "Does not compare package.json ranges against lockfile resolved versions"
+
+      - id: "cat13a-difficult"
+        difficulty: "difficult"
+        title: "Transitive Dependency Vulnerability Tracing"
+        description: "Trace a vulnerability through a deep transitive dependency chain"
+        prompt: |
+          Review fixtures/transitive-package.json and fixtures/transitive-tree.txt.
+
+          The package.json shows only clean, direct dependencies. However, the full
+          dependency tree (from `npm ls --all`) reveals the complete transitive
+          dependency graph.
+
+          Analyze the dependency tree to:
+          1. Identify any vulnerabilities in transitive dependencies
+          2. Trace the full dependency chain from your project to the vulnerable package
+          3. Determine which direct dependency introduces the vulnerability
+          4. Assess whether you can fix it without breaking your direct dependency
+        source_files:
+          - "fixtures/transitive-package.json"
+          - "fixtures/transitive-tree.txt"
+        expected_findings:
+          - id: "ret-redos"
+            description: "Identifies ret@0.2.2 ReDoS vulnerability"
+            required: true
+            points: 3
+          - id: "dep-chain"
+            description: "Traces the full dependency chain"
+            required: true
+            points: 3
+          - id: "root-dep"
+            description: "Identifies drizzle-orm as the root direct dependency"
+            required: true
+            points: 2
+          - id: "remediation"
+            description: "Suggests remediation strategy"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies ret@0.2.2 ReDoS vulnerability"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["ret", "0.2.2", "ReDoS", "CVE-2020-28469", "regular expression"]
+            - name: "Traces the full dependency chain"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["drizzle-orm", "sql-formatter", "nearley", "randexp", "ret", "chain"]
+            - name: "Identifies drizzle-orm as the root direct dependency"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["drizzle-orm", "direct dependency", "introduces", "root cause"]
+            - name: "Suggests remediation strategy"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["override", "resolution", "upstream fix", "fork", "npm overrides", "patch"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims vulnerabilities in packages that are not marked as vulnerable in the tree"
+            - flag: "-I"
+              condition: "Only looks at direct dependencies and misses the transitive vulnerability"
+
+      - id: "cat13a-hidden"
+        difficulty: "hidden"
+        title: "Malicious Dependency with Exfiltration Postinstall"
+        description: "Detect a malicious package disguised as a development tool"
+        prompt: |
+          Review fixtures/malicious-package.json.
+
+          This is a startup MVP project's package.json. Audit all dependencies
+          and scripts for anything suspicious. Consider:
+
+          1. Are all packages legitimate and well-known?
+          2. Do any packages have unusual names that do not appear on npm?
+          3. Are there any concerning script definitions or metadata?
+          4. Could any dependency introduce malicious behavior during installation?
+
+          Provide a thorough security assessment.
+        source_files:
+          - "fixtures/malicious-package.json"
+        expected_findings:
+          - id: "suspicious-package"
+            description: "Identifies dev-environment-setup as suspicious/unknown package"
+            required: true
+            points: 3
+          - id: "postinstall-script"
+            description: "Identifies the malicious postinstall script"
+            required: true
+            points: 3
+          - id: "exfiltration"
+            description: "Explains the data exfiltration mechanism"
+            required: true
+            points: 2
+          - id: "verification"
+            description: "Recommends verification steps"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies dev-environment-setup as suspicious/unknown package"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["dev-environment-setup", "suspicious", "unknown", "not a real", "unfamiliar"]
+            - name: "Identifies the malicious postinstall script"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["postinstall", "exfiltrate", ".env", "curl", "http", "telemetry"]
+            - name: "Explains the data exfiltration mechanism"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["reads .env", "sends data", "home directory", "environment", "secret", "credential"]
+            - name: "Recommends verification steps"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["npm registry", "verify", "audit", "ignore-scripts", "remove", "review"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims well-known packages like express or mongoose are malicious"
+            - flag: "-I"
+              condition: "Does not examine the _resolved_scripts metadata or the unknown package"
+
+  - id: "b"
+    name: "Lockfile & Manifest Analysis"
+    challenges:
+      - id: "cat13b-easy"
+        difficulty: "easy"
+        title: "Go Module Vulnerability Audit"
+        description: "Review a Go module file for outdated and vulnerable dependencies"
+        prompt: |
+          Review fixtures/go-mod-audit.txt which contains the contents of a go.mod file
+          for an API gateway service.
+
+          Audit the Go module dependencies for:
+          1. Packages with known vulnerabilities (especially golang.org/x/ packages)
+          2. Severely outdated dependencies
+          3. Dependencies using pre-release or pseudo-versions
+          4. Any modules that should be updated for security reasons
+
+          For each issue, provide the module, current version, the vulnerability,
+          and the recommended version.
+        source_files:
+          - "fixtures/go-mod-audit.txt"
+        expected_findings:
+          - id: "x-crypto"
+            description: "Identifies golang.org/x/crypto vulnerability"
+            required: true
+            points: 3
+          - id: "x-net"
+            description: "Identifies golang.org/x/net vulnerability"
+            required: true
+            points: 3
+          - id: "x-text"
+            description: "Identifies golang.org/x/text vulnerability"
+            required: false
+            points: 2
+          - id: "fix-versions"
+            description: "Recommends updated versions"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies golang.org/x/crypto vulnerability"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["x/crypto", "0.0.0-20220314", "outdated", "CVE", "vulnerable"]
+            - name: "Identifies golang.org/x/net vulnerability"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["x/net", "0.0.0-20220225", "outdated", "CVE", "HTTP/2"]
+            - name: "Identifies golang.org/x/text vulnerability"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["x/text", "0.3.7", "outdated", "CVE", "vulnerable"]
+            - name: "Recommends updated versions"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["upgrade", "latest", "go get -u", "govulncheck", "update"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims all Go modules are vulnerable without checking versions"
+            - flag: "-I"
+              condition: "Misses the clearly outdated golang.org/x/ pseudo-version dependencies"
+
+      - id: "cat13b-medium"
+        difficulty: "medium"
+        title: "Cross-Ecosystem Monorepo Audit"
+        description: "Audit a monorepo manifest with npm, pip, and Go dependencies"
+        prompt: |
+          Review fixtures/mixed-ecosystem.json which describes a monorepo with three
+          services using different package ecosystems (npm, pip, Go).
+
+          Perform a cross-ecosystem security audit:
+          1. Identify vulnerable dependencies in each ecosystem
+          2. Check for shared dependency concerns across services
+          3. Evaluate the registry configuration and lockfile policy
+          4. Assess whether the audit schedule is adequate
+
+          Provide findings organized by service and severity.
+        source_files:
+          - "fixtures/mixed-ecosystem.json"
+        expected_findings:
+          - id: "npm-vulns"
+            description: "Identifies vulnerable npm packages"
+            required: true
+            points: 2
+          - id: "pip-vulns"
+            description: "Identifies vulnerable pip packages"
+            required: true
+            points: 3
+          - id: "go-vulns"
+            description: "Identifies vulnerable Go modules"
+            required: true
+            points: 3
+          - id: "policy-concerns"
+            description: "Notes cross-ecosystem or policy concerns"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies vulnerable npm packages"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["express", "4.17.1", "jsonwebtoken", "8.5.1", "CVE", "outdated"]
+            - name: "Identifies vulnerable pip packages"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["pyyaml", "5.4", "pillow", "9.4.0", "protobuf", "3.19.6", "CVE"]
+            - name: "Identifies vulnerable Go modules"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["x/crypto", "0.0.0-2022", "outdated", "vulnerable"]
+            - name: "Notes cross-ecosystem or policy concerns"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["lockfile", "recommended", "enforce", "required", "weekly", "audit"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims all dependencies across all ecosystems are vulnerable"
+            - flag: "-I"
+              condition: "Only audits one ecosystem and ignores the others"
+
+      - id: "cat13b-hard"
+        difficulty: "hard"
+        title: "CI Pipeline Supply Chain Security"
+        description: "Audit a CI/CD pipeline for dependency installation security issues"
+        prompt: |
+          Review fixtures/ci-pipeline.yaml which contains a GitHub Actions workflow
+          for building and deploying an application.
+
+          Audit the pipeline for supply chain security issues:
+          1. How are dependencies installed? Is it secure?
+          2. Are there any untrusted script executions?
+          3. Are artifacts and images handled securely?
+          4. Are there any credential exposure risks?
+          5. Could an attacker compromise the build through the dependency installation steps?
+
+          Rank each finding by severity and provide remediation.
+        source_files:
+          - "fixtures/ci-pipeline.yaml"
+        expected_findings:
+          - id: "npm-install"
+            description: "Identifies npm install instead of npm ci"
+            required: true
+            points: 2
+          - id: "curl-bash"
+            description: "Identifies piped curl to bash execution"
+            required: true
+            points: 3
+          - id: "no-checksum"
+            description: "Identifies missing checksum verification"
+            required: false
+            points: 2
+          - id: "action-pinning"
+            description: "Identifies credential handling or action pinning issues"
+            required: true
+            points: 3
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies npm install instead of npm ci"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["npm install", "npm ci", "lockfile", "deterministic", "reproducible"]
+            - name: "Identifies piped curl to bash execution"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["curl", "pipe", "bash", "untrusted", "remote script", "arbitrary"]
+            - name: "Identifies missing checksum verification"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["checksum", "integrity", "verify", "hash", "--no-verify", "ignore-scripts"]
+            - name: "Identifies credential handling or action pinning issues"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["pin", "SHA", "actions/checkout@v3", "mutable tag", "secret", "credential"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims the pipeline is completely compromised when only specific steps are risky"
+            - flag: "-I"
+              condition: "Approves the pipeline without noting the curl pipe to bash pattern"
+
+      - id: "cat13b-difficult"
+        difficulty: "difficult"
+        title: "CycloneDX SBOM Vulnerability Audit"
+        description: "Audit a CycloneDX SBOM to identify components with known vulnerabilities"
+        prompt: |
+          Review fixtures/sbom.json which contains a CycloneDX Software Bill of Materials
+          for a Java payment processing service.
+
+          Using the SBOM data, perform a vulnerability audit:
+          1. Identify all components with known CVEs based on their version
+          2. Assess the severity of each vulnerability
+          3. Determine which are direct vs transitive risks
+          4. Prioritize remediation based on severity and exploitability
+          5. Note any components that should not be in a production deployment
+
+          Format your findings as a prioritized vulnerability report.
+        source_files:
+          - "fixtures/sbom.json"
+        expected_findings:
+          - id: "jackson-databind"
+            description: "Identifies jackson-databind vulnerability"
+            required: true
+            points: 2
+          - id: "snakeyaml"
+            description: "Identifies snakeyaml vulnerability"
+            required: true
+            points: 2
+          - id: "commons-text"
+            description: "Identifies commons-text vulnerability"
+            required: true
+            points: 2
+          - id: "h2-in-prod"
+            description: "Identifies h2 database should not be in production"
+            required: true
+            points: 2
+          - id: "remediation-plan"
+            description: "Provides prioritized remediation plan"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies jackson-databind vulnerability"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["jackson-databind", "2.13.4", "CVE", "deserialization", "polymorphic"]
+            - name: "Identifies snakeyaml vulnerability"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["snakeyaml", "1.30", "CVE-2022-1471", "code execution", "constructor"]
+            - name: "Identifies commons-text vulnerability"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["commons-text", "1.9", "CVE-2022-42889", "text4shell", "interpolation"]
+            - name: "Identifies h2 database should not be in production"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["h2", "2.1.214", "production", "CVE-2022-45868", "remote code", "test only"]
+            - name: "Provides prioritized remediation plan"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["priority", "critical", "upgrade", "remediat", "patch", "immediate"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims all 15 components are vulnerable without checking actual CVEs"
+            - flag: "-I"
+              condition: "Does not cross-reference component versions against known CVEs"
+
+      - id: "cat13b-hidden"
+        difficulty: "hidden"
+        title: "Supply Chain Attack vs Insider Threat Analysis"
+        description: "Analyze an incident report to determine if it was supply chain or insider"
+        prompt: |
+          Review fixtures/supply-chain-incident.md which contains an incident report
+          about an unauthorized data exfiltration event.
+
+          Analyze the incident and answer the questions at the end of the report:
+          1. What type of attack was this - supply chain compromise or insider threat?
+          2. What was the initial attack vector?
+          3. What security controls failed or were missing?
+          4. What remediation steps should be taken?
+          5. How could this have been prevented?
+
+          Support your conclusions with specific evidence from the report. Be precise
+          about what the evidence supports versus what is speculative.
+        source_files:
+          - "fixtures/supply-chain-incident.md"
+        expected_findings:
+          - id: "supply-chain-attack"
+            description: "Correctly identifies supply chain attack via npm package compromise"
+            required: true
+            points: 3
+          - id: "attack-vector"
+            description: "Identifies the attack vector - compromised maintainer account"
+            required: true
+            points: 3
+          - id: "missing-controls"
+            description: "Identifies missing security controls"
+            required: true
+            points: 2
+          - id: "dismisses-insider"
+            description: "Correctly dismisses insider threat with evidence"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Correctly identifies supply chain attack via npm package compromise"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["supply chain", "npm", "package compromise", "colors", "maintainer account"]
+            - name: "Identifies the attack vector - compromised maintainer account"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["maintainer", "account takeover", "no 2FA", "npm account", "compromised"]
+            - name: "Identifies missing security controls"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["lockfile", "npm ci", "2FA", "audit", "checksum", "pinning"]
+            - name: "Correctly dismisses insider threat with evidence"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["not insider", "Dev-C", "no evidence", "CI bot", "automated", "insufficient evidence"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Blames Dev-C as the insider without supporting evidence"
+            - flag: "-I"
+              condition: "Does not analyze the npm maintainer account compromise angle"

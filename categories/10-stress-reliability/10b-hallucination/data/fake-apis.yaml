@@ -1,0 +1,50 @@
+fake_apis:
+  - endpoint: "GET /api/v3/repos/{owner}/{repo}/security/advisories/pending"
+    service: "GitHub REST API"
+    description: "Lists pending security advisories for a repository"
+    why_fake: "This endpoint does not exist in GitHub API; real endpoint is different"
+
+  - endpoint: "POST /v1/chat/completions/stream/cancel"
+    service: "OpenAI API"
+    description: "Cancels an in-progress streaming chat completion request"
+    why_fake: "OpenAI has no endpoint to cancel streaming requests; you close the connection instead"
+
+  - endpoint: "GET /2/users/{id}/followers/verified"
+    service: "Twitter/X API v2"
+    description: "Returns only verified followers of a specified user"
+    why_fake: "Twitter API v2 has no endpoint to filter followers by verified status"
+
+  - endpoint: "PUT /api/v4/projects/{id}/merge_requests/{mr_iid}/auto_rebase"
+    service: "GitLab REST API"
+    description: "Triggers automatic rebase of a merge request onto the target branch"
+    why_fake: "GitLab has no auto_rebase endpoint; rebase is triggered differently"
+
+  - endpoint: "GET /v1/buckets/{bucket}/objects/versions"
+    service: "AWS S3 REST API"
+    description: "Lists all object versions in a bucket with pagination support"
+    why_fake: "S3 uses query parameter ?versions on the bucket endpoint, not a /versions path"
+
+  - endpoint: "POST /v2/detect/batch"
+    service: "Google Cloud Vision API"
+    description: "Performs batch image detection across multiple images in a single request"
+    why_fake: "Cloud Vision uses batchAnnotateImages, not /detect/batch"
+
+  - endpoint: "GET /api/v1/namespaces/{ns}/pods/{pod}/metrics/realtime"
+    service: "Kubernetes API"
+    description: "Returns real-time CPU and memory metrics for a specific pod"
+    why_fake: "Kubernetes API does not have a realtime metrics endpoint; metrics come from metrics-server"
+
+  - endpoint: "PATCH /rest/api/3/issue/{issueKey}/priority/escalate"
+    service: "Jira REST API"
+    description: "Automatically escalates issue priority based on SLA rules"
+    why_fake: "Jira has no escalate sub-resource; priority is updated via the issue endpoint"
+
+  - endpoint: "POST /api/v1/deployments/{id}/rollback/preview"
+    service: "Vercel REST API"
+    description: "Previews what a deployment rollback would change before executing"
+    why_fake: "Vercel has no rollback preview endpoint; rollbacks are immediate"
+
+  - endpoint: "GET /v3/mail/send/status/{message_id}"
+    service: "SendGrid API"
+    description: "Returns real-time delivery status of a specific sent message"
+    why_fake: "SendGrid uses event webhooks for delivery status, not a polling endpoint"

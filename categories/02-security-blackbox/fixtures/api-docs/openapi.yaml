@@ -1,0 +1,483 @@
+openapi: "3.0.3"
+info:
+  title: "TechMart API"
+  version: "2.4.1-beta"
+  description: |
+    REST API for TechMart e-commerce platform.
+    Authentication uses JWT tokens (HS256) passed via Authorization header.
+    All timestamps are in UTC. Rate limits apply per-user.
+  contact:
+    email: dev@techmart.local
+  license:
+    name: MIT
+
+servers:
+  - url: https://app.techmart.local/api
+    description: Production
+  - url: http://localhost:8080/api
+    description: Development
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token with HS256 algorithm.
+        Token payload contains: user_id, email, role, exp, iat.
+        Tokens are issued by /auth/login and /auth/refresh-token.
+        Example header: Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 42
+        email:
+          type: string
+          example: "user@example.com"
+        username:
+          type: string
+          example: "johndoe"
+        role:
+          type: string
+          enum: [user, admin]
+          example: "user"
+        avatar_url:
+          type: string
+          nullable: true
+          example: "https://app.techmart.local/avatars/42.png"
+        created_at:
+          type: string
+          format: date-time
+        last_login:
+          type: string
+          format: date-time
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+          example: "+1-555-0142"
+        address:
+          type: string
+          example: "123 Main St, Springfield, IL 62701"
+        date_of_birth:
+          type: string
+          format: date
+        order_count:
+          type: integer
+        total_spent:
+          type: number
+          format: float
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        price:
+          type: number
+          format: float
+        description:
+          type: string
+        category:
+          type: string
+        stock:
+          type: integer
+        image_url:
+          type: string
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              product_id:
+                type: integer
+              quantity:
+                type: integer
+              price:
+                type: number
+        total:
+          type: number
+        status:
+          type: string
+          enum: [pending, processing, shipped, delivered, cancelled]
+        created_at:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+
+security:
+  - BearerAuth: []
+
+paths:
+  /auth/login:
+    post:
+      summary: "Authenticate user"
+      security: []
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: "Login successful"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: "JWT token (HS256)"
+                  expires_in:
+                    type: integer
+                    description: "Token TTL in seconds (86400)"
+                  user:
+                    $ref: "#/components/schemas/User"
+        "401":
+          description: "Invalid credentials"
+
+  /auth/register:
+    post:
+      summary: "Register new user"
+      security: []
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, username, password]
+              properties:
+                email:
+                  type: string
+                username:
+                  type: string
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        "201":
+          description: "Registration successful"
+        "409":
+          description: "Email already exists"
+
+  /auth/reset-password:
+    post:
+      summary: "Request password reset"
+      description: |
+        Sends a password reset email to the provided address.
+        The server validates the email exists before sending.
+        Returns a success response with a reset token reference.
+      security: []
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: "Reset email sent"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "If the email exists, a reset link has been sent."
+                  reset_token_id:
+                    type: string
+                    description: "Reference ID for the reset token (for support purposes)"
+
+  /auth/refresh-token:
+    post:
+      summary: "Refresh JWT token"
+      tags: [Authentication]
+      responses:
+        "200":
+          description: "New token issued"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  expires_in:
+                    type: integer
+
+  /users/me:
+    get:
+      summary: "Get current user profile"
+      tags: [Users]
+      responses:
+        "200":
+          description: "Current user data"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /users/{id}/profile:
+    get:
+      summary: "Get user profile by ID"
+      description: |
+        Returns the full profile for the specified user.
+        Requires a valid JWT token.
+      tags: [Users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "User ID"
+      responses:
+        "200":
+          description: "User profile"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "404":
+          description: "User not found"
+
+  /users/{id}/avatar:
+    put:
+      summary: "Update user avatar"
+      description: |
+        Upload a new avatar image. Accepts either a file upload (multipart)
+        or a URL to fetch the image from.
+        When a URL is provided, the server fetches the image from the given
+        URL and stores it locally.
+      tags: [Users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: "Avatar image file (max 5MB, jpg/png/gif)"
+                url:
+                  type: string
+                  format: uri
+                  description: "URL to fetch avatar from (alternative to file upload)"
+      responses:
+        "200":
+          description: "Avatar updated"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  avatar_url:
+                    type: string
+        "400":
+          description: "Invalid file or URL"
+
+  /products:
+    get:
+      summary: "List products"
+      tags: [Products]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [price_asc, price_desc, newest, popular]
+      responses:
+        "200":
+          description: "Product list"
+
+  /products/{id}:
+    get:
+      summary: "Get product details"
+      tags: [Products]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: "Product details"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+
+  /products/search:
+    get:
+      summary: "Search products"
+      tags: [Products]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: "Search query string"
+      responses:
+        "200":
+          description: "Search results"
+
+  /cart:
+    get:
+      summary: "Get current cart"
+      tags: [Cart]
+      responses:
+        "200":
+          description: "Cart contents"
+    post:
+      summary: "Add item to cart"
+      tags: [Cart]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [product_id, quantity]
+              properties:
+                product_id:
+                  type: integer
+                quantity:
+                  type: integer
+                  minimum: 1
+      responses:
+        "200":
+          description: "Item added"
+
+  /cart/checkout:
+    post:
+      summary: "Checkout cart"
+      tags: [Cart]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [payment_method]
+              properties:
+                payment_method:
+                  type: string
+                  enum: [card, paypal]
+                shipping_address:
+                  type: string
+      responses:
+        "200":
+          description: "Order placed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders:
+    get:
+      summary: "List user orders"
+      tags: [Orders]
+      responses:
+        "200":
+          description: "Order list"
+
+  /orders/{id}:
+    get:
+      summary: "Get order details"
+      tags: [Orders]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: "Order details"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /notifications:
+    get:
+      summary: "List notifications"
+      tags: [Notifications]
+      responses:
+        "200":
+          description: "Notification list"

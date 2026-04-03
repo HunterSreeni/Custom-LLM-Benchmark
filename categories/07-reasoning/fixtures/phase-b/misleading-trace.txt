@@ -1,0 +1,123 @@
+=== Notification Service Error Log ===
+
+2026-04-03 09:45:12.001 [ERROR] NotificationService.sendOrderConfirmation() - Failed to send email notification
+java.lang.NullPointerException: Cannot invoke "String.toLowerCase()" because the return value of "com.acme.notification.model.UserContact.getEmail()" is null
+	at com.acme.notification.service.EmailSender.validateRecipient(EmailSender.java:67)
+	at com.acme.notification.service.EmailSender.sendEmail(EmailSender.java:42)
+	at com.acme.notification.service.NotificationService.sendOrderConfirmation(NotificationService.java:89)
+	at com.acme.notification.handler.OrderEventHandler.onOrderCompleted(OrderEventHandler.java:34)
+	at com.acme.notification.handler.OrderEventHandler$$FastClassBySpringCGLIB$$a1b2c3d4.invoke(<generated>)
+	at org.springframework.cglib.proxy.MethodProxy.invoke(MethodProxy.java:218)
+	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.invoke(CglibAopProxy.java:789)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163)
+	at org.springframework.kafka.listener.adapter.RecordMessagingMessageListenerAdapter.onMessage(RecordMessagingMessageListenerAdapter.java:79)
+	at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.doInvokeOnMessage(KafkaMessageListenerContainer.java:2733)
+	at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.invokeOnMessage(KafkaMessageListenerContainer.java:2714)
+	at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.doInvokeRecordListener(KafkaMessageListenerContainer.java:2628)
+	at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.doInvokeWithRecords(KafkaMessageListenerContainer.java:2549)
+	at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.invokeRecordListener(KafkaMessageListenerContainer.java:2437)
+	at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.run(KafkaMessageListenerContainer.java:1325)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.lang.Thread.run(Thread.java:833)
+
+Affected Order: ORD-78234
+Affected User: u_4412
+
+=== Notification Service Source Code ===
+
+// file: NotificationService.java
+@Service
+public class NotificationService {
+    @Autowired private UserServiceClient userClient;
+    @Autowired private EmailSender emailSender;
+
+    public void sendOrderConfirmation(OrderCompletedEvent event) {
+        // Fetch user contact info from User Service
+        UserContact contact = userClient.getUserContact(event.getUserId());
+
+        // Build email
+        String subject = "Order " + event.getOrderId() + " Confirmed";
+        String body = templateEngine.render("order-confirmation", event);
+
+        // Send - this is where the NPE occurs (contact.getEmail() returns null)
+        emailSender.sendEmail(contact.getEmail(), subject, body);
+    }
+}
+
+// file: EmailSender.java
+@Component
+public class EmailSender {
+    public void sendEmail(String to, String subject, String body) {
+        validateRecipient(to);
+        // ... send via SMTP
+    }
+
+    private void validateRecipient(String email) {
+        String normalized = email.toLowerCase();  // LINE 67 - NPE here
+        if (!EMAIL_PATTERN.matcher(normalized).matches()) {
+            throw new InvalidEmailException("Invalid email: " + email);
+        }
+    }
+}
+
+=== User Service - What actually happened ===
+
+// file: UserServiceClient.java (in Notification Service)
+@FeignClient(name = "user-service")
+public interface UserServiceClient {
+    @GetMapping("/api/users/{userId}/contact")
+    UserContact getUserContact(@PathVariable String userId);
+}
+
+// The User Service endpoint returns:
+// {
+//   "userId": "u_4412",
+//   "email": null,          <-- THIS IS THE PROBLEM
+//   "phone": "+1-555-0142",
+//   "preferredChannel": "email"
+// }
+
+=== User Service Internal Logs (not visible from Notification Service) ===
+
+2026-04-03 08:00:00.000 [INFO] DataMigration: Starting migration M-2026-0403 - Merging legacy user profiles
+2026-04-03 08:00:00.500 [INFO] DataMigration: Processing 12,847 user records
+2026-04-03 08:00:15.200 [WARN] DataMigration: User u_4412 - legacy profile has email in 'contact_email' field, new schema expects 'email'
+2026-04-03 08:00:15.201 [INFO] DataMigration: User u_4412 - mapped fields: {name: OK, phone: OK, address: OK}
+2026-04-03 08:00:15.202 [WARN] DataMigration: User u_4412 - field 'email' is NULL after migration (source field 'contact_email' was not in mapping config)
+2026-04-03 08:00:45.100 [INFO] DataMigration: Migration M-2026-0403 complete. 12,847 records processed. 342 records with NULL email (legacy field name mismatch)
+2026-04-03 08:00:45.101 [WARN] DataMigration: 342 users have NULL email after migration - see report /var/log/migration/M-2026-0403-nulls.csv
+
+--- Migration Script (the actual root cause) ---
+
+-- file: V42__merge_legacy_profiles.sql
+-- This migration merges the legacy 'user_profiles' table into the main 'users' table.
+-- Legacy table used 'contact_email' column name; new table uses 'email'.
+
+INSERT INTO users (id, name, phone, address, email, created_at)
+SELECT
+    lp.user_id,
+    lp.full_name,
+    lp.phone_number,
+    lp.mailing_address,
+    lp.email,            -- BUG: should be lp.contact_email (legacy column name)
+    lp.registration_date
+FROM legacy_profiles lp
+WHERE lp.user_id NOT IN (SELECT id FROM users);
+
+-- The legacy_profiles table has 'contact_email' NOT 'email'.
+-- Using lp.email resolves to NULL because that column doesn't exist in legacy_profiles
+-- (PostgreSQL doesn't error - it matches the alias from the INSERT column list).
+-- Result: 342 migrated users have NULL email.
+
+--- Key Insight ---
+The stack trace only shows Notification Service code.
+An inexperienced debugger might:
+  1. Add a null check in EmailSender (band-aid fix)
+  2. Add a null check in NotificationService (slightly better band-aid)
+
+The ACTUAL fix is in the User Service's data migration script (V42__merge_legacy_profiles.sql)
+which used the wrong column name, causing 342 users to have NULL emails.
+
+The Notification Service code is working correctly - it should fail loudly when
+it can't send an email. The data upstream is broken.

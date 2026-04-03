@@ -1,0 +1,67 @@
+category_id: 3
+total_bugs: 8
+
+bugs:
+  - id: "useeffect-dep"
+    difficulty: "easy"
+    file: "app/src/hooks/use-products.ts"
+    line: 68
+    description: "useEffect missing 'categoryFilter' in dependency array - effect runs once on mount but never re-runs when the category filter changes"
+    type: "react-antipattern"
+    verification: "grep for useEffect and confirm dependency array is empty [] on line 69"
+
+  - id: "map-key-index"
+    difficulty: "easy"
+    file: "app/src/components/ProductList.tsx"
+    line: 81
+    description: "Using array index as key in .map() instead of product.id - causes incorrect re-renders when list is filtered or sorted"
+    type: "react-antipattern"
+    verification: "grep for key={index} in the products.map callback"
+
+  - id: "cart-race-condition"
+    difficulty: "medium"
+    file: "app/src/components/Cart.tsx"
+    line: 32
+    description: "Race condition in updateQuantity - reads current quantity from stale closure instead of using functional state update, two rapid clicks can lose an update"
+    type: "race-condition"
+    verification: "Look for quantities[productId] read from closure in updateQuantity callback, should use setQuantities updater function"
+
+  - id: "websocket-leak"
+    difficulty: "hard"
+    file: "app/src/hooks/use-websocket.ts"
+    line: 56
+    description: "WebSocket connection not closed in useEffect cleanup - cleanup sets wsRef to null but never calls ws.close(), causing memory leak on unmount"
+    type: "memory-leak"
+    verification: "Check useEffect return/cleanup function - it sets wsRef.current = null but does not call ws.close()"
+
+  - id: "xss-innerhtml"
+    difficulty: "hard"
+    file: "app/src/components/ReviewSection.tsx"
+    line: 87
+    description: "XSS vulnerability via dangerouslySetInnerHTML rendering unsanitized user review content that could contain malicious scripts"
+    type: "security-xss"
+    verification: "grep for dangerouslySetInnerHTML with review.content passed directly without sanitization"
+
+  - id: "hydration-mismatch"
+    difficulty: "difficult"
+    file: "app/src/pages/Product.tsx"
+    line: 13
+    description: "new Date().toLocaleString() called directly during render produces different values between server and client, causing hydration mismatch"
+    type: "ssr-hydration"
+    verification: "grep for new Date().toLocaleString() in render body (not inside useEffect)"
+
+  - id: "tailwind-mobile-conflict"
+    difficulty: "difficult"
+    file: "app/src/components/MobileNav.tsx"
+    line: 55
+    description: "Conflicting Tailwind classes 'hidden md:flex flex' - the unconditional 'flex' overrides 'hidden' at mobile breakpoint, making the nav visible when it should be hidden on mobile"
+    type: "css-conflict"
+    verification: "grep for 'hidden md:flex flex' - the second 'flex' negates 'hidden' at all breakpoints"
+
+  - id: "zustand-multi-tab"
+    difficulty: "hidden"
+    file: "app/src/store/cart-store.ts"
+    line: 69
+    description: "Zustand persist middleware uses localStorage but does not subscribe to storage events from other tabs - Tab B shows stale cart data and can overwrite Tab A changes on checkout"
+    type: "state-sync"
+    verification: "Check persist config - no onRehydrate or storage event listener to sync state across browser tabs"

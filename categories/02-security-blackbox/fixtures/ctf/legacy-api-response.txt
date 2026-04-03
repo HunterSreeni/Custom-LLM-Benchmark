@@ -1,0 +1,50 @@
+# Response from: GET /api/v2/
+# This endpoint was found in robots.txt (disallowed) and JS bundle
+
+HTTP/1.1 200 OK
+Server: Go-HTTP-Server/1.1
+Content-Type: application/json; charset=utf-8
+X-API-Version: 2.0.0-alpha
+X-Request-ID: req-a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
+X-Deprecated: false
+Date: Thu, 03 Apr 2026 10:22:08 GMT
+Connection: keep-alive
+
+{
+  "api_version": "2.0.0-alpha",
+  "status": "active",
+  "flag": "FLAG{legacy_v2_endp01nt}",
+  "message": "Welcome to TechMart API v2 (alpha). This version includes experimental GraphQL support.",
+  "endpoints": {
+    "graphql": "/api/v2/graphql",
+    "graphql_playground": "/api/v2/graphql?playground=true",
+    "rest": {
+      "users": "/api/v2/users",
+      "products": "/api/v2/products",
+      "orders": "/api/v2/orders",
+      "admin": "/api/v2/admin"
+    }
+  },
+  "auth": {
+    "method": "JWT",
+    "note": "v2 accepts both v1 and v2 tokens for backward compatibility"
+  },
+  "deprecation_notice": null,
+  "changelog": [
+    {
+      "version": "2.0.0-alpha",
+      "date": "2026-03-01",
+      "changes": [
+        "Added GraphQL endpoint",
+        "New admin API for bulk operations",
+        "Relaxed CORS for development",
+        "Removed rate limiting (temporary, for testing)"
+      ]
+    }
+  ],
+  "known_issues": [
+    "GraphQL introspection is enabled",
+    "No rate limiting on v2 endpoints",
+    "Admin endpoints may not enforce role checks consistently"
+  ]
+}

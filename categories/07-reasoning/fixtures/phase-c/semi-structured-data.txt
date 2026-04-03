@@ -1,0 +1,59 @@
+--- Entry 1 (JSON) ---
+{"id": "TXN-001", "type": "purchase", "amount": 49.99, "currency": "USD", "customer": "Alice Smith", "email": "alice@example.com", "date": "2026-04-01", "status": "completed"}
+
+--- Entry 2 (CSV) ---
+TXN-002,refund,15.00,USD,Bob Johnson,bob.j@example.com,2026-04-01,pending
+
+--- Entry 3 (Free text) ---
+Transaction TXN-003: Customer Carol Williams (carol.w@example.com) made a purchase of $125.50 USD on April 1, 2026. The transaction was completed successfully.
+
+--- Entry 4 (JSON) ---
+{"id": "TXN-004", "type": "purchase", "amount": 89.99, "currency": "EUR", "customer": "David Brown", "email": "d.brown@example.com", "date": "2026-04-01", "status": "completed"}
+
+--- Entry 5 (CSV) ---
+TXN-005,subscription,9.99,USD,Eva Martinez,eva.m@example.com,2026-04-02,active
+
+--- Entry 6 (Free text) ---
+On 2026-04-02, customer Frank Lee (frank.lee@example.com) requested a refund of 35.00 EUR for transaction TXN-006. Status: approved and processing.
+
+--- Entry 7 (JSON) ---
+{"id": "TXN-007", "type": "purchase", "amount": 199.00, "currency": "USD", "customer": "Grace Kim", "email": "grace.k@example.com", "date": "2026-04-02", "status": "failed"}
+
+--- Entry 8 (CSV) ---
+TXN-008,purchase,42.50,GBP,Henry Wilson,h.wilson@example.com,2026-04-02,completed
+
+--- Entry 9 (Free text) ---
+Subscription renewal for TXN-009: Customer Iris Chen, email iris.chen@example.com. Amount: $14.99 USD. Date: April 2, 2026. Status is active.
+
+--- Entry 10 (JSON) ---
+{"id": "TXN-010", "type": "refund", "amount": 75.00, "currency": "USD", "customer": "Jack Davis", "email": "jack.d@example.com", "date": "2026-04-02", "status": "completed"}
+
+--- Entry 11 (CSV) ---
+TXN-011,purchase,299.99,USD,Karen White,k.white@example.com,2026-04-03,completed
+
+--- Entry 12 (Free text) ---
+Customer Leo Garcia (leo.g@example.com) completed a purchase on April 3, 2026. Transaction ID: TXN-012. Total amount was 67.50 USD. Status: completed.
+
+--- Entry 13 (JSON) ---
+{"id": "TXN-013", "type": "subscription", "amount": 29.99, "currency": "USD", "customer": "Mia Robinson", "email": "mia.r@example.com", "date": "2026-04-03", "status": "active"}
+
+--- Entry 14 (CSV) ---
+TXN-014,purchase,154.00,EUR,Noah Taylor,n.taylor@example.com,2026-04-03,completed
+
+--- Entry 15 (Free text) ---
+Refund processed for TXN-015. Customer: Olivia Anderson, email olivia.a@example.com. Refund amount: $22.50 USD on 2026-04-03. Status: completed.
+
+--- Entry 16 (JSON) ---
+{"id": "TXN-016", "type": "purchase", "amount": 550.00, "currency": "USD", "customer": "Peter Thomas", "email": "p.thomas@example.com", "date": "2026-04-03", "status": "pending"}
+
+--- Entry 17 (CSV) ---
+TXN-017,subscription,4.99,USD,Quinn Jackson,q.jackson@example.com,2026-04-03,active
+
+--- Entry 18 (Free text) ---
+Purchase transaction TXN-018 by customer Rachel Harris (rachel.h@example.com) on April 3, 2026 for 88.00 GBP. Transaction completed.
+
+--- Entry 19 (JSON) ---
+{"id": "TXN-019", "type": "refund", "amount": 110.00, "currency": "EUR", "customer": "Sam Martin", "email": "sam.m@example.com", "date": "2026-04-03", "status": "pending"}
+
+--- Entry 20 (CSV) ---
+TXN-020,purchase,33.75,USD,Tina Clark,t.clark@example.com,2026-04-03,completed

@@ -1,0 +1,203 @@
+# Full Test Suite - 200 Tests
+# Format: test_id | module | test_name
+
+T001 | auth | should return 401 when no token is provided
+T002 | auth | should return 401 when token is malformed
+T003 | auth | should return 401 when token is expired
+T004 | auth | should return 200 with valid token
+T005 | auth | should decode user payload from token
+T006 | auth | should return 403 when role is insufficient
+T007 | auth | should accept admin role for admin-only routes
+T008 | auth | should handle missing Authorization header gracefully
+T009 | auth | should trim Bearer prefix from token
+T010 | auth | should reject tokens signed with wrong secret
+T011 | auth | should allow expired token within grace period
+T012 | auth | should reject expired token past grace period
+T013 | auth | should set req.user on successful auth
+T014 | auth | should call next() on success
+T015 | auth | should not call next() on failure
+T016 | session | should create a new session in Redis
+T017 | session | should retrieve session by ID
+T018 | session | should return null for non-existent session
+T019 | session | should destroy a session
+T020 | session | should refresh session TTL
+T021 | session | should store user ID in session
+T022 | session | should store IP address in session
+T023 | session | should set createdAt timestamp
+T024 | session | should set expiresAt based on TTL
+T025 | session | should handle Redis connection failure
+T026 | session | should not refresh destroyed session
+T027 | session | should list all sessions for a user
+T028 | session | should destroy all sessions for a user
+T029 | session | should handle concurrent session creation
+T030 | session | should expire session after TTL
+T031 | rate-limiter | should allow first request
+T032 | rate-limiter | should allow requests within limit
+T033 | rate-limiter | should block requests over limit
+T034 | rate-limiter | should reset after window expires
+T035 | rate-limiter | should return correct retryAfter value
+T036 | rate-limiter | should track clients independently
+T037 | rate-limiter | should be a singleton
+T038 | rate-limiter | should handle unknown client in getRetryAfter
+T039 | rate-limiter | should record success and decrement counter
+T040 | rate-limiter | should not decrement below zero
+T041 | users | should list users with pagination
+T042 | users | should return 400 for invalid page number
+T043 | users | should filter users by role
+T044 | users | should search users by name
+T045 | users | should search users by email
+T046 | users | should return user by ID
+T047 | users | should return 404 for non-existent user
+T048 | users | should create a new user
+T049 | users | should hash password on creation
+T050 | users | should reject duplicate email
+T051 | users | should update user profile
+T052 | users | should not allow updating email to existing email
+T053 | users | should soft-delete user
+T054 | users | should restore soft-deleted user
+T055 | users | should hard-delete user
+T056 | users | should validate email format on creation
+T057 | users | should validate password strength
+T058 | users | should return 403 when non-admin lists users
+T059 | users | should paginate with default page size 50
+T060 | users | should cap page size at 100
+T061 | products | should list products with pagination
+T062 | products | should filter by category
+T063 | products | should filter by price range
+T064 | products | should sort by price ascending
+T065 | products | should sort by price descending
+T066 | products | should sort by name alphabetically
+T067 | products | should sort by created date
+T068 | products | should return product by ID
+T069 | products | should return 404 for non-existent product
+T070 | products | should create a product (admin only)
+T071 | products | should update product details
+T072 | products | should delete product (admin only)
+T073 | products | should search products by name
+T074 | products | should search products by description
+T075 | products | should handle empty search results
+T076 | products | should validate required fields on creation
+T077 | products | should reject negative price
+T078 | products | should handle null price gracefully
+T079 | products | should include category in response
+T080 | products | should paginate with cursor-based pagination
+T081 | cart | should add item to cart
+T082 | cart | should increase quantity for existing item
+T083 | cart | should remove item from cart
+T084 | cart | should clear entire cart
+T085 | cart | should calculate subtotal
+T086 | cart | should apply discount code
+T087 | cart | should reject invalid discount code
+T088 | cart | should reject expired discount code
+T089 | cart | should limit quantity to available stock
+T090 | cart | should persist cart across sessions
+T091 | cart | should merge anonymous cart on login
+T092 | cart | should return 404 for non-existent cart item
+T093 | cart | should handle concurrent quantity updates
+T094 | cart | should recalculate total on item change
+T095 | cart | should limit cart to 50 unique items
+T096 | orders | should create order from cart
+T097 | orders | should validate stock before order creation
+T098 | orders | should decrement stock on order placement
+T099 | orders | should calculate tax
+T100 | orders | should calculate shipping
+T101 | orders | should apply free shipping over threshold
+T102 | orders | should return order by ID
+T103 | orders | should list orders for user
+T104 | orders | should return 404 for non-existent order
+T105 | orders | should cancel pending order
+T106 | orders | should not cancel shipped order
+T107 | orders | should track order status transitions
+T108 | orders | should send confirmation email
+T109 | orders | should handle payment failure
+T110 | orders | should rollback stock on payment failure
+T111 | payments | should process credit card payment
+T112 | payments | should process PayPal payment
+T113 | payments | should reject expired card
+T114 | payments | should handle 3D Secure challenge
+T115 | payments | should store payment method for future use
+T116 | payments | should refund full amount
+T117 | payments | should refund partial amount
+T118 | payments | should reject refund exceeding original amount
+T119 | payments | should handle gateway timeout
+T120 | payments | should retry failed payment once
+T121 | notifications | should send email notification
+T122 | notifications | should send push notification
+T123 | notifications | should respect user notification preferences
+T124 | notifications | should queue notifications for batch delivery
+T125 | notifications | should handle template rendering errors
+T126 | notifications | should include unsubscribe link in emails
+T127 | notifications | should rate-limit notifications per user
+T128 | notifications | should log notification delivery status
+T129 | notifications | should format timestamps in user timezone
+T130 | notifications | should retry failed email delivery
+T131 | export | should export data as CSV
+T132 | export | should include headers in CSV
+T133 | export | should respect date range filter
+T134 | export | should respect segment filter
+T135 | export | should respect metric selection
+T136 | export | should limit export to 100k rows
+T137 | export | should show confirmation for large exports
+T138 | export | should generate correct filename
+T139 | export | should use UTF-8 with BOM encoding
+T140 | export | should escape commas in field values
+T141 | export | should handle empty result set
+T142 | export | should queue concurrent exports
+T143 | export | should send email for scheduled export
+T144 | export | should retry failed scheduled export
+T145 | export | should expire download link after 7 days
+T146 | export | should validate email before scheduling
+T147 | export | should enforce max 5 schedules per user
+T148 | export | should audit log every export
+T149 | export | should respect RBAC for segment access
+T150 | export | should handle session expiry during async export
+T151 | search | should return results matching query
+T152 | search | should highlight matching terms
+T153 | search | should support fuzzy matching
+T154 | search | should filter by category
+T155 | search | should paginate results
+T156 | search | should return empty array for no matches
+T157 | search | should handle special characters in query
+T158 | search | should debounce rapid queries
+T159 | search | should log search queries for analytics
+T160 | search | should rank results by relevance
+T161 | dashboard | should load all widgets
+T162 | dashboard | should render line chart
+T163 | dashboard | should render bar chart
+T164 | dashboard | should render pie chart
+T165 | dashboard | should render area chart
+T166 | dashboard | should apply date range filter to charts
+T167 | dashboard | should refresh data on interval
+T168 | dashboard | should handle widget load failure gracefully
+T169 | dashboard | should display loading state
+T170 | dashboard | should display error state
+T171 | dashboard | should support responsive layout
+T172 | dashboard | should persist widget positions
+T173 | admin | should list all users (admin only)
+T174 | admin | should ban user account
+T175 | admin | should unban user account
+T176 | admin | should view audit logs
+T177 | admin | should filter audit logs by date
+T178 | admin | should filter audit logs by action type
+T179 | admin | should export audit logs
+T180 | admin | should manage feature flags
+T181 | admin | should toggle maintenance mode
+T182 | admin | should view system health metrics
+T183 | profile | should retrieve current user profile
+T184 | profile | should update display name
+T185 | profile | should update avatar
+T186 | profile | should validate avatar file size
+T187 | profile | should validate avatar file type
+T188 | profile | should update timezone preference
+T189 | profile | should update notification preferences
+T190 | profile | should change password
+T191 | profile | should require current password for change
+T192 | profile | should reject weak new password
+T193 | profile | should enable two-factor auth
+T194 | profile | should disable two-factor auth
+T195 | profile | should generate backup codes for 2FA
+T196 | e2e | should complete full purchase flow
+T197 | e2e | should complete login and browse products
+T198 | e2e | should complete password reset flow
+T199 | e2e | should complete export and download flow
+T200 | e2e | should handle session timeout during checkout

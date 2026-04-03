@@ -1,0 +1,108 @@
+diff --git a/internal/pipeline/processor.go b/internal/pipeline/processor.go
+new file mode 100644
+index 0000000..d4e5f6a
+--- /dev/null
++++ b/internal/pipeline/processor.go
+@@ -0,0 +1,95 @@
++package pipeline
++
++import (
++	"context"
++	"fmt"
++	"log"
++	"sync"
++	"time"
++)
++
++type Record struct {
++	ID   string
++	Data map[string]interface{}
++}
++
++type Result struct {
++	RecordID string
++	Status   string
++	Error    error
++}
++
++type Processor struct {
++	workers    int
++	timeout    time.Duration
++	results    map[string]*Result
++	mu         sync.Mutex
++}
++
++func NewProcessor(workers int, timeout time.Duration) *Processor {
++	return &Processor{
++		workers: workers,
++		timeout: timeout,
++		results: make(map[string]*Result),
++	}
++}
++
++// ProcessBatch processes records concurrently using a worker pool.
++func (p *Processor) ProcessBatch(ctx context.Context, records []Record) error {
++	ch := make(chan Record, len(records))
++	var wg sync.WaitGroup
++
++	// Start workers
++	for i := 0; i < p.workers; i++ {
++		wg.Add(1)
++		go func(workerID int) {
++			defer wg.Done()
++			for record := range ch {
++				result := p.processRecord(ctx, record)
++				p.results[record.ID] = result
++			}
++		}(i)
++	}
++
++	// Send records to workers
++	for _, record := range records {
++		ch <- record
++	}
++	close(ch)
++
++	wg.Wait()
++	return nil
++}
++
++func (p *Processor) processRecord(ctx context.Context, record Record) *Result {
++	result := &Result{RecordID: record.ID}
++
++	// Create a timeout context for this record
++	ctx, cancel := context.WithTimeout(ctx, p.timeout)
++
++	done := make(chan struct{})
++	go func() {
++		// Simulate processing
++		time.Sleep(100 * time.Millisecond)
++
++		// Validate record
++		if record.Data == nil {
++			result.Status = "error"
++			result.Error = fmt.Errorf("nil data for record %s", record.ID)
++			done <- struct{}{}
++			return
++		}
++
++		result.Status = "success"
++		done <- struct{}{}
++	}()
++
++	select {
++	case <-done:
++		cancel()
++		return result
++	case <-ctx.Done():
++		log.Printf("timeout processing record %s", record.ID)
++		result.Status = "timeout"
++		result.Error = ctx.Err()
++		return result
++	}
++}
++
++// GetResults returns a copy of all processing results.
++func (p *Processor) GetResults() map[string]*Result {
++	return p.results
++}

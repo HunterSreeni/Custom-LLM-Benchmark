@@ -1,0 +1,85 @@
+diff --git a/src/utils/pagination.ts b/src/utils/pagination.ts
+new file mode 100644
+index 0000000..a3b4c5d
+--- /dev/null
++++ b/src/utils/pagination.ts
+@@ -0,0 +1,72 @@
++export interface PaginationOptions {
++  page: number;
++  pageSize: number;
++  totalItems: number;
++}
++
++export interface PaginationResult<T> {
++  items: T[];
++  currentPage: number;
++  totalPages: number;
++  totalItems: number;
++  hasNextPage: boolean;
++  hasPrevPage: boolean;
++}
++
++export function paginate<T>(
++  items: T[],
++  options: PaginationOptions
++): PaginationResult<T> {
++  const { page, pageSize, totalItems } = options;
++
++  // Calculate total pages
++  const totalPages = Math.floor(totalItems / pageSize);
++
++  // Clamp page to valid range
++  const currentPage = Math.max(1, Math.min(page, totalPages));
++
++  // Calculate slice indices
++  const startIndex = (currentPage - 1) * pageSize;
++  const endIndex = startIndex + pageSize;
++
++  // Slice the items array
++  const paginatedItems = items.slice(startIndex, endIndex);
++
++  return {
++    items: paginatedItems,
++    currentPage,
++    totalPages,
++    totalItems,
++    hasNextPage: currentPage < totalPages,
++    hasPrevPage: currentPage > 1,
++  };
++}
++
++export function getPageNumbers(
++  currentPage: number,
++  totalPages: number,
++  maxVisible: number = 5
++): number[] {
++  if (totalPages <= maxVisible) {
++    return Array.from({ length: totalPages }, (_, i) => i + 1);
++  }
++
++  const half = Math.floor(maxVisible / 2);
++  let start = currentPage - half;
++  let end = currentPage + half;
++
++  if (start < 1) {
++    start = 1;
++    end = maxVisible;
++  }
++
++  if (end > totalPages) {
++    end = totalPages;
++    start = totalPages - maxVisible;
++  }
++
++  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
++}
++
++export function buildQueryString(page: number, pageSize: number, filters: Record<string, string>): string {
++  const params = new URLSearchParams();
++  params.set('page', String(page));
++  params.set('pageSize', String(pageSize));
++  for (const [key, value] of Object.entries(filters)) {
++    if (value) params.set(key, value);
++  }
++  return params.toString();
++}

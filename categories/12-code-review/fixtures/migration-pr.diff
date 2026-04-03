@@ -1,0 +1,73 @@
+diff --git a/migrations/20240315_update_orders.sql b/migrations/20240315_update_orders.sql
+new file mode 100644
+index 0000000..f1a2b3c
+--- /dev/null
++++ b/migrations/20240315_update_orders.sql
+@@ -0,0 +1,62 @@
++-- Migration: Update orders table for v2 billing
++-- Author: dev-team
++-- Date: 2024-03-15
++
++BEGIN;
++
++-- Rename column to match new API naming convention
++ALTER TABLE orders RENAME COLUMN user_id TO customer_id;
++
++-- Add new billing fields
++ALTER TABLE orders ADD COLUMN billing_address_id INTEGER NOT NULL REFERENCES addresses(id);
++ALTER TABLE orders ADD COLUMN tax_amount DECIMAL(10,2) DEFAULT 0.00;
++ALTER TABLE orders ADD COLUMN discount_code VARCHAR(50);
++ALTER TABLE orders ADD COLUMN payment_intent_id VARCHAR(255);
++ALTER TABLE orders ADD COLUMN fulfilled_at TIMESTAMP;
++ALTER TABLE orders ADD COLUMN cancelled_at TIMESTAMP;
++ALTER TABLE orders ADD COLUMN refund_amount DECIMAL(10,2);
++
++-- Create new order_items table
++CREATE TABLE order_items (
++    id SERIAL PRIMARY KEY,
++    order_id INTEGER NOT NULL REFERENCES orders(id),
++    product_id INTEGER NOT NULL REFERENCES products(id),
++    quantity INTEGER NOT NULL CHECK (quantity > 0),
++    unit_price DECIMAL(10,2) NOT NULL,
++    total_price DECIMAL(10,2) NOT NULL,
++    created_at TIMESTAMP DEFAULT NOW()
++);
++
++-- Migrate data from JSON items column to order_items table
++INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
++SELECT
++    o.id,
++    (item->>'product_id')::INTEGER,
++    (item->>'quantity')::INTEGER,
++    (item->>'unit_price')::DECIMAL,
++    (item->>'quantity')::INTEGER * (item->>'unit_price')::DECIMAL
++FROM orders o,
++    json_array_elements(o.items::json) AS item;
++
++-- Drop old JSON items column
++ALTER TABLE orders DROP COLUMN items;
++
++-- Add status enum
++DO $$
++BEGIN
++    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'order_status') THEN
++        CREATE TYPE order_status AS ENUM ('pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded');
++    END IF;
++END$$;
++
++ALTER TABLE orders ALTER COLUMN status TYPE order_status USING status::order_status;
++
++-- Update existing NULL statuses
++UPDATE orders SET status = 'pending' WHERE status IS NULL;
++
++COMMIT;
++
++-- Rollback script (separate file recommended)
++-- BEGIN;
++-- ALTER TABLE orders RENAME COLUMN customer_id TO user_id;
++-- ALTER TABLE orders ADD COLUMN items JSONB;
++-- DROP TABLE IF EXISTS order_items;
++-- ALTER TABLE orders DROP COLUMN billing_address_id;
++-- ALTER TABLE orders DROP COLUMN tax_amount;
++-- ... etc
++-- COMMIT;

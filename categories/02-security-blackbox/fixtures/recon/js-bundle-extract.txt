@@ -1,0 +1,70 @@
+# Extracted strings from /static/js/app.bundle.min.js (274 KB)
+# Tool: strings + manual analysis
+# Date: 2026-04-02
+
+# --- API Endpoints ---
+/api/auth/login
+/api/auth/register
+/api/auth/logout
+/api/auth/reset-password
+/api/auth/verify-email
+/api/auth/refresh-token
+/api/users/
+/api/users/me
+/api/users/{id}/profile
+/api/users/{id}/avatar
+/api/users/{id}/settings
+/api/products/
+/api/products/{id}
+/api/products/{id}/reviews
+/api/cart/
+/api/cart/checkout
+/api/orders/
+/api/orders/{id}
+/api/orders/{id}/status
+/api/v2/
+/api/v2/graphql
+/api/search?q=
+/api/notifications/
+/ws/notifications
+
+# --- Configuration Strings ---
+HTMX_CONFIG
+hx-get
+hx-post
+hx-target
+hx-swap
+hx-trigger
+hx-push-url
+htmx.config.defaultSwapStyle
+htmx.config.historyCacheSize
+
+# --- Error Messages ---
+"Invalid session token"
+"User not found"
+"Insufficient permissions"
+"Rate limit exceeded"
+"Database error: SQLITE_ERROR"
+"SQLITE_CONSTRAINT: UNIQUE constraint failed"
+"File upload failed: unsupported format"
+
+# --- Internal References ---
+window.__APP_VERSION__ = "2.4.1-beta"
+window.__API_BASE__ = "/api"
+window.__WS_URL__ = "wss://app.techmart.local/ws/notifications"
+window.__DEBUG_MODE__ = false
+ADMIN_PANEL_URL: "/admin/dashboard"
+INTERNAL_API: "/api/internal"
+METRICS_ENDPOINT: "/api/internal/metrics"
+
+# --- JWT Related ---
+"Authorization: Bearer "
+localStorage.getItem("jwt_token")
+jwt_decode
+"alg": "HS256"
+"typ": "JWT"
+
+# --- Third Party ---
+htmx@1.9.10
+alpine@3.13.3
+chart.js@4.4.0

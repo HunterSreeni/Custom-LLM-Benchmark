@@ -1,0 +1,30 @@
+# Error response captured during fuzzing
+# Input: POST /api/products/search with body {"q": "\ud800\udbff\U0010FFFF\x00"}
+# Sent unicode boundary values and null bytes in search query
+
+HTTP/1.1 500 Internal Server Error
+Server: Go-HTTP-Server/1.1
+Content-Type: application/json; charset=utf-8
+X-Request-ID: req-f1e2d3c4-b5a6-4789-8901-2345abcdef67
+Date: Thu, 03 Apr 2026 10:14:33 GMT
+Connection: keep-alive
+
+{
+  "error": "database_error",
+  "message": "SQLITE_ERROR: unrecognized token at offset 47",
+  "details": {
+    "query_fragment": "...WHERE name LIKE '%\ud800\udbff%' OR description LIKE '%\ud800\udbff%'",
+    "sqlite_code": 1,
+    "sqlite_extended_code": 1,
+    "db_file": "/opt/techmart/data/techmart.db",
+    "table": "products",
+    "flag": "FLAG{unicode_0verflow_sql1te}",
+    "internal_note": "Unicode boundary handling not sanitized - see issue TM-2847",
+    "stack": [
+      "database.QueryProducts() at /opt/techmart/server/database/sqlite.go:89",
+      "handlers.SearchProducts() at /opt/techmart/server/handlers/product_handler.go:156",
+      "middleware.Recovery() at /opt/techmart/server/middleware/recovery.go:34"
+    ]
+  },
+  "request_id": "req-f1e2d3c4-b5a6-4789-8901-2345abcdef67"
+}

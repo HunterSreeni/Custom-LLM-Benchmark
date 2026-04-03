@@ -1,0 +1,103 @@
+> nexus-platform@2.4.1 ci
+> npm run lint && npm run test && npm run build
+
+> nexus-platform@2.4.1 lint
+> eslint src/ --ext .ts,.tsx
+
+/home/runner/work/nexus-platform/nexus-platform/src/components/ui/data-table.tsx
+  14:1  warning  Unexpected any. Specify a more specific type  @typescript-eslint/no-explicit-any
+
+Done with 1 warning.
+
+> nexus-platform@2.4.1 test
+> vitest run --reporter=verbose
+
+ RUN  v1.6.0
+
+ PASS  tests/unit/lib/auth/session.test.ts (4 tests) 120ms
+ PASS  tests/unit/lib/auth/permissions.test.ts (8 tests) 85ms
+ PASS  tests/unit/lib/utils/date.test.ts (12 tests) 45ms
+ PASS  tests/unit/lib/utils/format.test.ts (6 tests) 32ms
+ PASS  tests/unit/hooks/use-auth.test.ts (5 tests) 198ms
+ PASS  tests/unit/hooks/use-debounce.test.ts (3 tests) 67ms
+ PASS  tests/unit/components/ui/button.test.tsx (4 tests) 156ms
+ PASS  tests/unit/components/auth/login-form.test.tsx (6 tests) 234ms
+
+ Test Files  8 passed (8)
+      Tests  48 passed (48)
+   Start at  14:22:31
+   Duration  2.43s (transform 456ms, setup 120ms, collect 890ms, tests 937ms)
+
+> nexus-platform@2.4.1 build
+> next build
+
+   Creating an optimized production build ...
+
+info  - Loaded env from /home/runner/work/nexus-platform/nexus-platform/.env.production
+warn  - Invalid next.config.mjs options detected:
+      - unrecognized key "swcMinify" (removed in Next.js 15)
+
+   Linting and checking validity of types  ...
+
+./src/lib/realtime/ws-client.ts:47:5
+Type error: Argument of type 'ReturnType<typeof setTimeout>' is not assignable to parameter of type 'number'.
+
+npm error code ELIFECYCLE
+npm error errno 1
+npm error nexus-platform@2.4.1 build: `next build`
+npm error Exit status 1
+npm error
+npm error Failed at the nexus-platform@2.4.1 build script.
+
+Error: Process completed with exit code 1.
+
+--- RETRY ATTEMPT 1 ---
+
+Running: npm ci --legacy-peer-deps
+
+npm warn deprecated @humanwhocodes/config-array@0.11.14: Use @eslint/config-array instead
+npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+npm warn deprecated inflight@1.0.6: This module is not supported and leaks memory
+npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+
+npm error code ERESOLVE
+npm error ERESOLVE could not resolve
+npm error
+npm error While resolving: @tanstack/react-query@5.62.3
+npm error Found: react@19.0.0
+npm error node_modules/react
+npm error   react@"19.0.0" from the root project
+npm error   peer react@"^18.0.0 || ^19.0.0" from next@15.1.0
+npm error   node_modules/next
+npm error     next@"15.1.0" from the root project
+npm error
+npm error Could not resolve dependency:
+npm error peer react@"^18.0.0" from @tanstack/react-query@5.62.3
+npm error node_modules/@tanstack/react-query
+npm error   @tanstack/react-query@"^5.62.3" from the root project
+npm error
+npm error Conflicting peer dependency: react@18.3.1
+npm error node_modules/react
+npm error   peer react@"^18.0.0" from @tanstack/react-query@5.62.3
+npm error   node_modules/@tanstack/react-query
+npm error     @tanstack/react-query@"^5.62.3" from the root project
+npm error
+npm error Fix the upstream dependency conflict, or retry
+npm error this command with --force, or --legacy-peer-deps
+npm error to accept an incorrect (and potentially broken) dependency resolution.
+npm error
+npm error
+npm error For a full report see:
+npm error /home/runner/.npm/_logs/2025-01-15T14_23_45_892Z-eresolve-report.txt
+npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2025-01-15T14_23_45_892Z-debug-0.log
+
+Error: Process completed with exit code 1.
+
+--- CI ENVIRONMENT ---
+Node.js: v20.11.0
+npm: 10.2.4
+OS: ubuntu-latest (Ubuntu 22.04.3 LTS)
+Runner: GitHub Actions hosted runner
+Workflow: .github/workflows/ci.yml
+Trigger: push to main (commit abc1234)

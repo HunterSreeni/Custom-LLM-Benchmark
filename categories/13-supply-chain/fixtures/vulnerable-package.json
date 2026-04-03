@@ -1,0 +1,40 @@
+{
+  "name": "acme-dashboard",
+  "version": "2.1.0",
+  "description": "Internal analytics dashboard for ACME Corp",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "build": "webpack --mode production",
+    "test": "jest --coverage"
+  },
+  "dependencies": {
+    "express": "4.18.2",
+    "lodash": "4.17.19",
+    "axios": "1.4.0",
+    "moment": "2.29.4",
+    "minimist": "0.2.1",
+    "uuid": "9.0.0",
+    "dotenv": "16.3.1",
+    "cors": "2.8.5",
+    "helmet": "7.0.0",
+    "compression": "1.7.4",
+    "morgan": "1.10.0",
+    "node-fetch": "2.6.0",
+    "pg": "8.11.3",
+    "redis": "4.6.7",
+    "jsonwebtoken": "9.0.1",
+    "bcryptjs": "2.4.3",
+    "multer": "1.4.5-lts.1",
+    "winston": "3.10.0",
+    "ejs": "3.1.9",
+    "cookie-parser": "1.4.6"
+  },
+  "devDependencies": {
+    "jest": "29.6.2",
+    "eslint": "8.46.0",
+    "nodemon": "3.0.1",
+    "webpack": "5.88.2",
+    "webpack-cli": "5.1.4"
+  }
+}

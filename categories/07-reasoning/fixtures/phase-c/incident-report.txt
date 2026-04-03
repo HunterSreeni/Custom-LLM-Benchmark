@@ -1,0 +1,86 @@
+INCIDENT REPORT - IR-2026-0403-ALPHA
+Classification: Confidential
+Date: April 3, 2026
+Analyst: Security Operations Center
+
+EXECUTIVE SUMMARY
+
+On April 2, 2026 at approximately 22:15 UTC, our EDR solution detected anomalous behavior on the workstation belonging to employee Mark Stevens (Engineering Department). Investigation revealed a sophisticated multi-stage attack that began with a spear-phishing email and resulted in data exfiltration to an external command-and-control server.
+
+INITIAL ACCESS
+
+The attack began when Mark received an email from "hr-benefits@acme-corp.com" (note: legitimate internal HR uses hr@acme-corp.com). The email was sent from the IP address 45.33.32.156 and contained a link to hxxps://acme-benefits-portal[.]com/enroll/2026. DNS records show this domain resolved to 185.220.101.34 at the time of the incident. The domain was registered on March 28, 2026 through a privacy-protected registrar.
+
+Mark clicked the link at 21:45 UTC on April 2, which downloaded a file named "Benefits_Enrollment_2026.pdf.exe" (SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855). The file was saved to C:\Users\mstevens\Downloads\Benefits_Enrollment_2026.pdf.exe and executed at 21:47 UTC.
+
+EXECUTION AND PERSISTENCE
+
+Upon execution, the malware dropped a secondary payload at C:\ProgramData\Microsoft\Windows\svchost32.exe (MD5: d41d8cd98f00b204e9800998ecf8427e, SHA256: a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a). The payload established persistence via a scheduled task named "WindowsHealthCheck" that runs every 15 minutes.
+
+The malware also created a registry key at HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\HealthMonitor pointing to the dropped executable.
+
+Process analysis shows the malware injected into the legitimate svchost.exe process (PID 4812) and began network reconnaissance using built-in Windows commands (whoami, ipconfig, net user /domain, nltest /dclist).
+
+LATERAL MOVEMENT
+
+At 22:05 UTC, the compromised workstation made RDP connections to two internal servers:
+- 10.10.5.20 (file-server-01) - successful login using stolen credentials
+- 10.10.5.35 (db-admin-01) - failed login attempt, locked out after 3 tries
+
+On file-server-01, the attacker accessed the share \\file-server-01\engineering\project-phoenix and compressed several directories into C:\Temp\archive.7z.
+
+COMMAND AND CONTROL
+
+The malware communicated with the following C2 infrastructure:
+- Primary C2: 91.219.237.229 on port 443 (HTTPS)
+- Secondary C2: 23.106.122.100 on port 8443
+- DNS tunneling via queries to ns1.data-analytics-cdn[.]net (resolved to 104.21.45.67)
+- Backup channel: Telegram bot API calls to api.telegram.org from the compromised host
+
+Network logs show encrypted data transfers to 91.219.237.229 totaling approximately 2.3 GB between 22:10 and 23:45 UTC. The traffic used TLS 1.3 with a self-signed certificate (SHA256 fingerprint: 7d2f8a91bc4e3d567f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e).
+
+DATA EXFILTRATION
+
+Based on file access logs from file-server-01, the following data was accessed:
+- /engineering/project-phoenix/designs/ (148 files)
+- /engineering/project-phoenix/source-code/ (2,341 files)
+- /engineering/budgets/Q2-2026-forecast.xlsx
+
+The attacker used the tool rclone.exe (renamed to svcupdate.exe, placed at C:\Windows\Temp\svcupdate.exe, SHA256: 4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdbe4a6) to sync data to a Mega.nz cloud storage account.
+
+INDICATORS OF COMPROMISE
+
+Email indicators:
+- Sender: hr-benefits@acme-corp.com
+- Reply-to: support@acme-benefits-portal.com
+
+Network indicators observed in firewall logs:
+- Outbound connections to 45.33.32.156 (phishing infrastructure)
+- Outbound connections to 185.220.101.34 (malicious domain hosting)
+- Outbound connections to 91.219.237.229:443 (primary C2)
+- Outbound connections to 23.106.122.100:8443 (secondary C2)
+- DNS queries to ns1.data-analytics-cdn.net (DNS tunneling)
+- DNS queries to acme-benefits-portal.com (phishing domain)
+
+The attacker also registered a lookalike domain acme-corp-sso[.]com (resolved to 185.220.101.35) which was found in browser history but does not appear to have been used in this incident.
+
+AFFECTED ACCOUNTS
+
+- mstevens (Mark Stevens) - primary compromised account
+- svc_backup (service account) - credentials found in attacker's command history, believed extracted from memory
+
+REMEDIATION ACTIONS TAKEN
+
+1. Isolated workstation WKSTN-ENG-042 from network at 23:50 UTC
+2. Reset credentials for mstevens and svc_backup accounts
+3. Blocked all identified IOC IPs and domains at firewall
+4. Initiated full forensic image of WKSTN-ENG-042 and file-server-01
+5. Engaged external IR firm CyberDefense Partners (contact: ir-team@cyberdefense-partners.com)
+
+RECOMMENDATIONS
+
+1. Implement application whitelisting to prevent unauthorized executables
+2. Enable MFA for all RDP access
+3. Deploy DNS sinkholing for newly registered domains
+4. Review email gateway rules for lookalike domain detection
+5. Conduct phishing awareness training for engineering department

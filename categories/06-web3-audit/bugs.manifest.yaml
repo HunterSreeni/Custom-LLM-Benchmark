@@ -1,0 +1,163 @@
+category_id: 6
+category_name: "Web3 / DeFi Audit"
+total_bugs: 5
+
+bugs:
+  - id: "bug-1"
+    challenge_id: "cat6-easy"
+    difficulty: "easy"
+    type: "Reentrancy"
+    cwe: "CWE-841"
+    severity: "critical"
+    title: "Classic reentrancy - state update after external call in withdraw()"
+    description: |
+      The VulnerableVault.withdraw() function sends ETH to the caller via
+      a low-level call before updating the sender's balance. An attacker can
+      deploy a contract with a receive() or fallback() function that re-enters
+      withdraw() before the balance is zeroed, draining the entire vault.
+    file: "contracts/VulnerableVault.sol"
+    line: 31
+    vulnerable_code: |
+      (bool success, ) = payable(msg.sender).call{value: amount}("");
+      require(success, "Transfer failed");
+      balances[msg.sender] -= amount;
+    entry_point: "Attacker contract calls deposit() then withdraw() with reentrant fallback"
+    exploit_example: |
+      1. Attacker deposits 1 ETH via attacker contract
+      2. Attacker calls withdraw() from attacker contract
+      3. Vault sends 1 ETH to attacker contract, triggering receive()
+      4. receive() calls withdraw() again - balance still shows 1 ETH
+      5. Repeat until vault is drained
+    fix: "Move balances[msg.sender] -= amount before the external call (checks-effects-interactions), or use OpenZeppelin ReentrancyGuard"
+    verification: "Check that state update happens after external call in withdraw()"
+
+  - id: "bug-2"
+    challenge_id: "cat6-medium"
+    difficulty: "medium"
+    type: "Front-running / MEV"
+    cwe: "CWE-362"
+    severity: "high"
+    title: "No slippage protection or deadline in swap function"
+    description: |
+      The SimpleDEX.swap() function executes swaps using spot price with no
+      minimum output amount (slippage protection) and no deadline parameter.
+      An attacker monitoring the mempool can sandwich the victim's transaction:
+      front-run with a large buy to move the price, let the victim's swap execute
+      at a worse price, then back-run with a sell to profit.
+    file: "contracts/SimpleDEX.sol"
+    line: 55
+    vulnerable_code: |
+      function swap(address tokenIn, uint256 amountIn) external {
+          // No minAmountOut parameter
+          // No deadline parameter
+          uint256 amountOut = (amountIn * resOut) / (resIn + amountIn);
+    entry_point: "Any swap() call visible in the mempool"
+    exploit_example: |
+      1. Victim submits swap(tokenA, 100) to buy tokenB
+      2. Attacker sees tx in mempool, front-runs with swap(tokenA, 10000) at higher gas
+      3. Price of tokenB increases significantly
+      4. Victim's swap executes at inflated price, receiving fewer tokenB
+      5. Attacker back-runs with swap(tokenB, ...) to sell at profit
+    fix: "Add minAmountOut parameter with require(amountOut >= minAmountOut), add deadline parameter with require(block.timestamp <= deadline)"
+    verification: "Check swap() function signature for missing slippage and deadline parameters"
+
+  - id: "bug-3"
+    challenge_id: "cat6-hard"
+    difficulty: "hard"
+    type: "Flash Loan Oracle Manipulation"
+    cwe: "CWE-807"
+    severity: "critical"
+    title: "Spot price oracle vulnerable to flash loan manipulation"
+    description: |
+      The LendingPool.getPrice() reads spot reserves directly from an AMM pair
+      via _getAMMReserves(). An attacker can use a flash loan to temporarily
+      manipulate the AMM reserves within a single transaction, inflate the
+      collateral price, borrow more than the collateral is worth, and profit
+      after repaying the flash loan.
+    file: "contracts/LendingPool.sol"
+    line: 56
+    vulnerable_code: |
+      function getPrice() public view returns (uint256) {
+          (uint256 reserve0, uint256 reserve1) = _getAMMReserves();
+          return (reserve1 * PRICE_PRECISION) / reserve0;
+      }
+    entry_point: "Flash loan -> manipulate AMM -> borrow() -> repay flash loan"
+    exploit_example: |
+      1. Take flash loan of large amount of collateralToken
+      2. Swap into the AMM to inflate collateralToken price (skew reserves)
+      3. Deposit small amount of collateral into LendingPool
+      4. Call borrow() - getPrice() reads manipulated reserves, allows overborrowing
+      5. Swap back in AMM to restore reserves
+      6. Repay flash loan, keep the excess borrowed tokens as profit
+    fix: "Use a TWAP (time-weighted average price) oracle that averages price over multiple blocks, or integrate Chainlink price feeds"
+    verification: "Check that getPrice() reads spot reserves from AMM without any time-weighted averaging"
+
+  - id: "bug-4"
+    challenge_id: "cat6-difficult"
+    difficulty: "difficult"
+    type: "Proxy Storage Collision"
+    cwe: "CWE-1260"
+    severity: "high"
+    title: "TokenV2 storage variables collide with proxy admin storage"
+    description: |
+      The TransparentProxy uses EIP-1967 slots for implementation and admin.
+      However, TokenV2 adds two new state variables (totalFees at slot 8 and
+      feeCollector at slot 9) after the _initialized bool. Because delegatecall
+      executes in the proxy's storage context, TokenV2's _initialized variable
+      (slot 7) may collide with storage that the proxy has written, and the
+      new variables extend the layout in ways that can corrupt state depending
+      on how the proxy manages its own storage. The core issue is that V2 adds
+      variables without accounting for the existing proxy storage layout or
+      using storage gaps.
+    file: "contracts/UpgradeableToken.sol"
+    line: 128
+    vulnerable_code: |
+      bool private _initialized;
+      uint256 public totalFees;
+      address public feeCollector;
+    related_files:
+      - "contracts/UpgradeableToken.sol"
+    entry_point: "Upgrade proxy from TokenV1 to TokenV2"
+    exploit_example: |
+      1. Deploy proxy with TokenV1 implementation
+      2. Initialize TokenV1 (sets _initialized = true, sets owner, etc.)
+      3. Upgrade to TokenV2
+      4. TokenV2's totalFees and feeCollector occupy new slots that were not
+         reserved in V1, potentially corrupting or being corrupted by any
+         proxy-level storage writes
+      5. State reads/writes return unexpected values
+    fix: "Use storage gaps in V1 (uint256[50] __gap) to reserve space for future variables, or use unstructured storage (EIP-1967 pattern) for all new V2 variables"
+    verification: "Map storage slots for proxy, TokenV1, and TokenV2 and check for overlaps"
+
+  - id: "bug-5"
+    challenge_id: "cat6-hidden"
+    difficulty: "hidden"
+    type: "Hidden Mint / Rug Pull"
+    cwe: "CWE-840"
+    severity: "critical"
+    title: "Conditional hidden mint in _transfer() triggered by large amounts"
+    description: |
+      The FeeToken._transfer() function has a conditional branch that activates
+      when amount * feeRate would overflow (amount > type(uint256).max / feeRate).
+      In this branch, it recalculates the fee differently and adds a "bonus"
+      (feeAmount >> 4) to the owner's balance while increasing totalSupply.
+      This is disguised as an alternative fee calculation path but actually
+      mints new tokens to the owner, enabling a rug pull.
+    file: "contracts/FeeToken.sol"
+    line: 65
+    vulnerable_code: |
+      if (amount > type(uint256).max / feeRate) {
+          feeAmount = amount / FEE_DENOMINATOR * feeRate;
+          uint256 bonus = feeAmount >> 4;
+          balanceOf[owner] += bonus;
+          totalSupply += bonus;
+      }
+    entry_point: "Transfer with amount large enough to trigger the overflow branch"
+    exploit_example: |
+      1. Owner crafts a transfer with a very large amount that triggers the condition
+      2. The if-branch executes, minting bonus tokens to the owner
+      3. totalSupply silently increases
+      4. Owner dumps the extra tokens on the market
+      5. Repeat to gradually inflate supply and extract value
+    fix: "Remove the conditional branch entirely. Use SafeMath-style checks or simply cap the fee calculation without minting extra tokens"
+    verification: "Check _transfer() for any code path that increases totalSupply or adds tokens to owner beyond the stated fee"

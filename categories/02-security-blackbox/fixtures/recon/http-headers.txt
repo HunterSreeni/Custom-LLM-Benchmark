@@ -1,0 +1,18 @@
+HTTP/1.1 200 OK
+Server: Go-HTTP-Server/1.1
+Content-Type: text/html; charset=utf-8
+X-Powered-By: htmx/1.9.10
+Set-Cookie: session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo0MiwiZXhwIjoxNzQzNzIwMDAwfQ.Rk9LMjZGNTRhYmNkZWZnaGlqa2xtbm9wcXJzdHV2; Path=/; HttpOnly; SameSite=Lax
+X-Request-ID: req-a8f3b2c1-9d4e-4f6a-b7c8-1e2f3a4b5c6d
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Referrer-Policy: strict-origin-when-cross-origin
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+Cache-Control: no-store, no-cache, must-revalidate
+Pragma: no-cache
+HX-Push-Url: /dashboard
+HX-Trigger: page-loaded
+X-SQLite-Version: 3.44.2
+Content-Length: 28491
+Date: Thu, 03 Apr 2026 10:00:00 GMT
+Connection: keep-alive

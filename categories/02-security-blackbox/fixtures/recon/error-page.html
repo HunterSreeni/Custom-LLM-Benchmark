@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>500 - Internal Server Error</title>
+    <style>
+        body { font-family: monospace; background: #1a1a2e; color: #e0e0e0; padding: 40px; }
+        .error-box { background: #16213e; border: 1px solid #e94560; border-radius: 8px; padding: 20px; max-width: 900px; margin: 0 auto; }
+        h1 { color: #e94560; }
+        .stack-trace { background: #0f3460; padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 13px; line-height: 1.6; }
+        .highlight { color: #e94560; font-weight: bold; }
+        .muted { color: #888; }
+    </style>
+</head>
+<body>
+    <div class="error-box">
+        <h1>500 Internal Server Error</h1>
+        <p>An unexpected error occurred while processing your request.</p>
+
+        <h3>Request Details</h3>
+        <pre>
+Method:  POST
+Path:    /api/products/search
+Host:    app.techmart.local
+Time:    2026-04-03T09:47:23.441Z
+ReqID:   req-b7d2e1f3-8a4c-4b9e-a6d1-3c5f7e8b9a0d
+        </pre>
+
+        <h3>Stack Trace</h3>
+        <div class="stack-trace">
+<pre>
+goroutine 847 [running]:
+runtime/debug.Stack()
+    /usr/local/go/src/runtime/debug/stack.go:24 +0x5e
+main.recoveryMiddleware.func1.1()
+    <span class="highlight">/opt/techmart/server/middleware/recovery.go:34</span> +0x82
+panic({0x7f2a40, 0xc0004b6120})
+    /usr/local/go/src/runtime/panic.go:884 +0x212
+
+<span class="highlight">github.com/techmart-app/server/handlers.SearchProducts()</span>
+    <span class="highlight">/opt/techmart/server/handlers/product_handler.go:156</span> +0x3a4
+github.com/techmart-app/server/handlers.(*ProductHandler).Search()
+    /opt/techmart/server/handlers/product_handler.go:142 +0x1b8
+github.com/techmart-app/server/database.QueryProducts()
+    <span class="highlight">/opt/techmart/server/database/sqlite.go:89</span> +0x2f1
+
+<span class="muted">--- Database Error ---</span>
+<span class="highlight">SQLITE_ERROR: near "UNION": syntax error</span>
+<span class="highlight">Query: SELECT * FROM products WHERE name LIKE '%' + ? + '%'</span>
+<span class="highlight">DB Path: /opt/techmart/data/techmart.db</span>
+
+github.com/mattn/go-sqlite3.(*SQLiteConn).exec()
+    /go/pkg/mod/github.com/mattn/go-sqlite3@v1.14.22/sqlite3.go:472 +0x1cd
+database/sql.(*DB).execDC()
+    /usr/local/go/src/database/sql/sql.go:1691 +0x28e
+
+net/http.(*ServeMux).ServeHTTP()
+    /usr/local/go/src/net/http/server.go:2556 +0x142
+net/http.serverHandler.ServeHTTP()
+    /usr/local/go/src/net/http/server.go:3080 +0x7b
+</pre>
+        </div>
+
+        <h3>Server Information</h3>
+        <pre>
+Server:     Go-HTTP-Server/1.1
+Go Version: go1.22.1
+OS/Arch:    linux/amd64
+App:        TechMart v2.4.1-beta
+DB Engine:  SQLite 3.44.2
+Uptime:     14d 7h 23m
+PID:        1847
+        </pre>
+
+        <p class="muted">If this error persists, contact the development team at dev@techmart.local</p>
+        <p class="muted">Error ID: err-b7d2e1f3 | Logged at /var/log/techmart/errors.log</p>
+    </div>
+</body>
+</html>

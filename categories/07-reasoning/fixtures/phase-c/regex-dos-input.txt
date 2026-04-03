@@ -1,0 +1,64 @@
+--- Task ---
+Write a regex pattern that validates email addresses according to common rules:
+- Must have a local part, @ symbol, and domain
+- Local part can contain letters, digits, dots, hyphens, underscores, plus signs
+- Domain must have at least one dot
+- Domain labels must start and end with alphanumeric characters
+
+--- Test Inputs ---
+
+# Valid emails (should match)
+user@example.com
+firstname.lastname@company.co.uk
+user+tag@gmail.com
+admin@sub.domain.example.org
+user123@test-domain.com
+a@b.co
+very.long.email.address.with.many.dots@very.long.domain.name.example.com
+
+# Invalid emails (should not match)
+@example.com
+user@
+user@.com
+user@com
+plaintext
+user @example.com
+user@exam ple.com
+
+# Edge cases
+"quoted.user"@example.com
+user@[192.168.1.1]
+user@localhost
+
+# Pathological inputs - these test regex safety
+# If your regex uses nested quantifiers like (a+)+ or (.+)*, these inputs
+# will cause catastrophic backtracking (exponential time complexity).
+
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaa@
+aaaa.aaaa.aaaa.aaaa.aaaa.aaaa.aaaa.aaaa.aaaa.aaaa.aaaa.aaaa@
+a]a]a]a]a]a]a]a]a]a]a]a]a]a]a]a]a]a]a]a]a]a]a]a]a]a]a]a]a]@
+aaaaaaaaaaaaaaaaaaaaa@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@bbbbbbbbbbbbbbbbbbbb.cccccccccc.dddddddddd.eeeeeeeeee.ffffffffff.gggggggggg.hhhhhhhhhh.iiiiiiiiii.
+a]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!@example.com
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa!@example.com
+user@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.com
+
+--- Expected Behavior ---
+
+A safe regex should:
+1. Correctly match valid emails and reject invalid ones
+2. Complete in O(n) time for ALL inputs, including pathological ones
+3. NOT use patterns like (.+)+, (a+)+, (a|aa)+, or nested quantifiers
+4. Prefer possessive quantifiers (a++) or atomic groups ((?>a+)) if available
+5. Use anchored patterns (^...$) to prevent partial matching
+
+A VULNERABLE regex example (DO NOT USE):
+  ^([a-zA-Z0-9._%+-]+)+@([a-zA-Z0-9.-]+)+\.[a-zA-Z]{2,}$
+  Note the nested + quantifiers: ([...]+)+ causes exponential backtracking
+  on inputs like "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@" (no valid domain)
+
+A SAFE regex example:
+  ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)+$
+  No nested quantifiers - runs in linear time on all inputs

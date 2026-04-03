@@ -1,0 +1,73 @@
+{
+  "alert_rules": [
+    {
+      "name": "HighCPU",
+      "description": "Alert when CPU usage is high",
+      "metric": "cpu_usage_percent",
+      "condition": "above",
+      "threshold": 95,
+      "duration": "15m",
+      "severity": "warning",
+      "notification_channels": ["email"],
+      "enabled": true
+    },
+    {
+      "name": "HighMemory",
+      "description": "Alert when memory usage is high",
+      "metric": "memory_usage_percent",
+      "condition": "above",
+      "threshold": 95,
+      "duration": "10m",
+      "severity": "warning",
+      "notification_channels": ["email"],
+      "enabled": true
+    },
+    {
+      "name": "DiskSpaceLow",
+      "description": "Alert when disk space is running low",
+      "metric": "disk_usage_percent",
+      "condition": "above",
+      "threshold": 99,
+      "duration": "5m",
+      "severity": "critical",
+      "notification_channels": ["email"],
+      "enabled": true
+    },
+    {
+      "name": "APIErrorRate",
+      "description": "Alert on high API error rate",
+      "metric": "http_5xx_count",
+      "condition": "above",
+      "threshold": 100,
+      "duration": "10m",
+      "severity": "warning",
+      "notification_channels": ["email"],
+      "enabled": true
+    },
+    {
+      "name": "DatabaseConnections",
+      "description": "Alert when DB connections are near max",
+      "metric": "db_active_connections",
+      "condition": "above",
+      "threshold": 95,
+      "duration": "5m",
+      "severity": "critical",
+      "notification_channels": ["email"],
+      "enabled": false
+    }
+  ],
+  "notification_channels": [
+    {
+      "name": "email",
+      "type": "email",
+      "recipients": ["ops@nexus-platform.com"],
+      "throttle_minutes": 60
+    }
+  ],
+  "global_settings": {
+    "evaluation_interval": "60s",
+    "default_severity": "warning",
+    "auto_resolve": true,
+    "auto_resolve_after": "30m"
+  }
+}

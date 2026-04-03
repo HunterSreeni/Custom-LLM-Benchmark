@@ -1,0 +1,42 @@
+# Test Coverage Report for src/services/payment.ts
+# Generated: 2024-03-15
+# Framework: Vitest
+
+File: src/services/payment.ts
+  Statements: 98.2% (55/56)
+  Branches:   100% (12/12)
+  Functions:  100% (2/2)
+  Lines:      98.2% (55/56)
+
+Test File: src/services/__tests__/payment.test.ts
+  Total Tests: 14
+  Passed: 14
+  Failed: 0
+
+Test Cases:
+  [PASS] processPayment - calculates correct amount for simple order
+  [PASS] processPayment - handles multi-item orders with correct decimal math
+  [PASS] processPayment - applies tax rate correctly
+  [PASS] processPayment - applies discount correctly
+  [PASS] processPayment - discount cannot make total negative (floors at 0)
+  [PASS] processPayment - handles zero-amount orders without calling Stripe
+  [PASS] processPayment - uses idempotency key based on order ID
+  [PASS] processPayment - converts currency to lowercase for Stripe
+  [PASS] processPayment - rounds cents correctly (avoids floating point: 19.99 * 3)
+  [PASS] processPayment - handles requires_action status from Stripe
+  [PASS] processPayment - handles failed status from Stripe
+  [PASS] processPayment - includes metadata with breakdown
+  [PASS] processPayment - handles zero tax rate
+  [PASS] processPayment - handles missing discount (undefined)
+
+Edge Cases Covered:
+  - Floating point: 0.1 + 0.2 scenario via Decimal.js
+  - Rounding: $19.99 * 3 = $59.97 -> 5997 cents (not 5996 or 5998)
+  - Zero amount: order with 100% discount
+  - Negative prevention: discount > subtotal + tax
+  - Missing optional fields: no taxRate, no discountAmount
+  - Currency handling: USD, EUR, GBP, JPY (zero-decimal)
+  - Stripe status mapping: succeeded, requires_action, processing -> failed
+
+Uncovered Line:
+  Line 47: logger.info (logging-only, not behavior-critical)

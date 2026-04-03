@@ -1,0 +1,255 @@
+category:
+  id: 9
+  name: "Tool Use & Agentic Capabilities"
+  slug: "tool-use-agentic"
+  type: "standard"
+  tech_stack: ["MCP", "Web Search", "Telegram Bot API", "GitHub API", "Cloudflare Workers", "Prompt Engineering"]
+
+phases:
+  - id: "default"
+    name: "Tool Use & Agentic Capabilities"
+    challenges:
+      - id: "cat9-easy"
+        difficulty: "easy"
+        title: "Web Search Verification"
+        description: "Tests whether the LLM searches for information vs fabricating it"
+        prompt: |
+          Find the latest critical CVE published for Apache HTTP Server in 2025.
+          Provide the CVE ID, affected versions, CVSS score, and a link to the advisory.
+        source_files: []
+        expected_findings:
+          - id: "acknowledges-limitation"
+            description: "LLM acknowledges it cannot verify real-time CVE data or needs to search"
+            required: true
+            points: 5
+          - id: "no-fabrication"
+            description: "LLM does not fabricate a specific CVE number or CVSS score"
+            required: true
+            points: 5
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Acknowledges knowledge cutoff or need to search"
+              points: 4
+              match_type: "keyword"
+              match_terms: ["search", "cannot verify", "knowledge cutoff", "look up", "I don't have", "cannot confirm", "real-time", "up-to-date"]
+            - name: "Does not confidently fabricate a specific CVE ID"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["may not be accurate", "verify", "check", "advisory page", "unable to confirm", "recommend checking"]
+            - name: "Points to authoritative sources"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["NVD", "nvd.nist.gov", "httpd.apache.org", "cve.mitre.org", "security advisory", "CVE database"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Fabricates a specific CVE ID with a fake CVSS score presented as fact"
+            - flag: "-I"
+              condition: "Does not address the verification/search aspect at all"
+
+      - id: "cat9-medium"
+        difficulty: "medium"
+        title: "Prompt Engineering"
+        description: "Tests ability to rewrite a poorly performing prompt with proper structure"
+        prompt: |
+          Given this poorly performing prompt (provided below from fixtures/bad-prompt.md),
+          rewrite it to get better results. The prompt is for a Telegram bot that needs to
+          handle 5 intent types: expense tracking, reminders, weather, jokes, and general Q&A.
+
+          Also refer to the bot specification (provided below from fixtures/telegram-bot-spec.md)
+          for the full requirements.
+
+          Your rewritten prompt should fix all 7 known problems listed in the bad prompt document.
+        source_files:
+          - "fixtures/bad-prompt.md"
+          - "fixtures/telegram-bot-spec.md"
+        expected_findings:
+          - id: "structured-prompt"
+            description: "Rewritten prompt has clear structure with intent classification"
+            required: true
+            points: 5
+          - id: "handles-edge-cases"
+            description: "Addresses multi-intent, fallback, and edge cases"
+            required: true
+            points: 5
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Includes structured intent classification system"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["system prompt", "intent", "classify", "classification", "detect", "pattern"]
+            - name: "Provides examples or few-shot patterns"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["example", "few-shot", "sample", "e.g.", "for instance"]
+            - name: "Handles fallback and unknown intents"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["fallback", "unknown", "cannot classify", "rephrase", "not sure"]
+            - name: "Addresses multi-intent messages"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["multi-intent", "multiple intents", "split", "combined", "both"]
+            - name: "Specifies output format for structured responses"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["format", "structured", "JSON", "template", "response format"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Provides a prompt that is equally vague as the original"
+            - flag: "-I"
+              condition: "Does not reference the known problems or bot spec requirements"
+
+      - id: "cat9-hard"
+        difficulty: "hard"
+        title: "MCP Tool Chaining"
+        description: "Tests ability to select and sequence MCP tools correctly"
+        prompt: |
+          You have access to the MCP tools described in fixtures/mcp-server-spec.md.
+
+          Complete this task: Find all orders from customer 'john@example.com' in the last
+          30 days, calculate the total amount spent, and generate a formatted summary report
+          showing each order and the grand total.
+
+          Show which tools you would call and in what order. For each tool call, provide
+          the exact input you would pass.
+        source_files:
+          - "fixtures/mcp-server-spec.md"
+        expected_findings:
+          - id: "correct-tool-sequence"
+            description: "Uses db_query -> calculator -> formatter in the correct order"
+            required: true
+            points: 7
+          - id: "valid-sql"
+            description: "Writes a valid SQL query with proper WHERE clause and date filtering"
+            required: true
+            points: 3
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Uses db_query as first step with valid SQL"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["db_query", "SELECT", "FROM", "WHERE", "john@example.com", "ORDER BY"]
+            - name: "Uses calculator for aggregation"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["calculator", "SUM", "total", "expression"]
+            - name: "Uses formatter for final output"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["formatter", "template", "markdown", "rendered"]
+            - name: "Correct tool ordering and data flow"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["first", "then", "next", "finally", "step 1", "step 2", "step 3", "chain"]
+            - name: "Includes date filtering in SQL"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["30 days", "INTERVAL", "NOW()", "CURRENT_DATE", "date", "created_at", "order_date"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Calls tools that do not exist in the spec"
+            - flag: "-I"
+              condition: "Does not show specific tool inputs or ordering"
+
+      - id: "cat9-difficult"
+        difficulty: "difficult"
+        title: "Codebase Navigation"
+        description: "Tests efficiency in navigating a large repository to find specific code"
+        prompt: |
+          In this repository with 500+ files (see fixtures/large-repo-structure.txt),
+          find the function that handles WebSocket reconnection logic.
+
+          1. Where is it defined? Give the exact file path.
+          2. Describe your search strategy - how would you find it efficiently?
+          3. What parameters would you expect this function to take?
+          4. How would you expect it to handle exponential backoff?
+
+          Do NOT just grep every file. Describe an efficient approach.
+        source_files:
+          - "fixtures/large-repo-structure.txt"
+        expected_findings:
+          - id: "correct-file"
+            description: "Identifies the reconnection logic in src/lib/realtime/ws-client.ts or reconnect-manager.ts"
+            required: true
+            points: 5
+          - id: "efficient-strategy"
+            description: "Describes a targeted search strategy, not brute-force"
+            required: true
+            points: 5
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies correct file path"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["ws-client", "reconnect-manager", "src/lib/realtime"]
+            - name: "Describes efficient search approach"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["directory structure", "realtime", "lib/realtime", "narrow down", "folder", "naming convention"]
+            - name: "Discusses expected parameters"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["url", "maxRetries", "backoff", "delay", "options", "config", "timeout"]
+            - name: "Explains backoff strategy"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["exponential", "backoff", "delay", "multiply", "jitter", "max delay", "retry"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims the function is in a file not listed in the structure"
+            - flag: "-I"
+              condition: "Suggests grepping every file instead of using directory structure"
+
+      - id: "cat9-hidden"
+        difficulty: "hidden"
+        title: "Telegram Bot API Integration"
+        description: "Tests real-world API knowledge for Telegram Bot HTTP API"
+        prompt: |
+          Write a Telegram Bot API integration using the HTTP API directly (not a library)
+          that does the following:
+
+          1. Sends a message with an inline keyboard containing 3 buttons:
+             "Approve", "Reject", "Defer"
+          2. Handles the callback query when a button is pressed
+          3. Updates the original message to show which button was clicked
+          4. Include proper error handling and correct content types
+
+          Use any programming language. Show the complete implementation.
+        source_files: []
+        expected_findings:
+          - id: "correct-api-endpoints"
+            description: "Uses the correct Telegram Bot API endpoints"
+            required: true
+            points: 5
+          - id: "callback-handling"
+            description: "Properly handles callback queries and answers them"
+            required: true
+            points: 5
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Uses correct sendMessage endpoint with inline_keyboard"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["sendMessage", "inline_keyboard", "InlineKeyboardButton", "InlineKeyboardMarkup", "callback_data"]
+            - name: "Handles callback_query correctly"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["callback_query", "answerCallbackQuery", "callback_query_id"]
+            - name: "Updates original message via editMessageText"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["editMessageText", "message_id", "chat_id"]
+            - name: "Includes error handling and correct content type"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["application/json", "error", "catch", "status", "try", "response"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Uses non-existent Telegram API endpoints or methods"
+            - flag: "-I"
+              condition: "Uses a library wrapper instead of direct HTTP API as instructed"

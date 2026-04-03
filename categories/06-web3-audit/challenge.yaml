@@ -1,0 +1,294 @@
+category:
+  id: 6
+  name: "Web3 / DeFi Audit"
+  slug: "web3-audit"
+  type: "standard"
+  tech_stack: ["Solidity 0.8+", "Hardhat", "ethers.js", "OpenZeppelin", "DeFi patterns"]
+
+description: |
+  You are auditing a set of Solidity smart contracts for a DeFi protocol.
+  Each contract implements a common DeFi pattern. Your task is to identify
+  security vulnerabilities, explain how they can be exploited, and suggest fixes.
+  Focus on contract-level vulnerabilities, not gas optimizations.
+
+phases:
+  - id: "default"
+    name: "Smart Contract Vulnerability Analysis"
+    challenges:
+      - id: "cat6-easy"
+        difficulty: "easy"
+        title: "Reentrancy in ETH Vault"
+        description: |
+          Review VulnerableVault.sol, a simple ETH vault allowing deposits and withdrawals.
+          Analyze the withdraw function for any state management issues related to
+          external calls.
+        source_files:
+          - "contracts/VulnerableVault.sol"
+        prompt: |
+          Examine the withdraw() function carefully. Pay attention to the order of
+          operations - when state is updated relative to external calls. Identify
+          any vulnerability and explain how an attacker contract could exploit it.
+        expected_findings:
+          - id: "identifies-reentrancy"
+            description: "Identifies reentrancy vulnerability"
+            required: true
+            points: 3
+          - id: "locates-pattern"
+            description: "Locates the vulnerable code pattern (state after external call)"
+            required: true
+            points: 3
+          - id: "explains-exploit"
+            description: "Explains the exploit mechanism via attacker contract"
+            required: false
+            points: 2
+          - id: "suggests-fix"
+            description: "Suggests checks-effects-interactions or reentrancy guard"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies reentrancy vulnerability"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["reentrancy", "re-entrancy", "reentrant", "recursive call"]
+            - name: "Locates the vulnerable code pattern"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["state after", "balance update", "call before", "external call", "msg.sender.call"]
+            - name: "Explains the exploit mechanism"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["fallback", "receive", "attacker contract", "drain", "recursive", "callback"]
+            - name: "Suggests checks-effects-interactions or reentrancy guard"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["checks-effects-interactions", "ReentrancyGuard", "nonReentrant", "update before", "mutex"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims overflow/underflow issues in Solidity 0.8+ without unchecked blocks"
+            - flag: "-I"
+              condition: "Does not identify the reentrancy despite reviewing withdraw()"
+
+      - id: "cat6-medium"
+        difficulty: "medium"
+        title: "Front-running and MEV in DEX"
+        description: |
+          Review SimpleDEX.sol, a minimal decentralized exchange using the constant
+          product formula. Analyze the swap function for price manipulation and
+          front-running vulnerabilities.
+        source_files:
+          - "contracts/SimpleDEX.sol"
+        prompt: |
+          Examine the swap() function. Consider what protections are missing that
+          would leave users vulnerable to MEV extraction. Think about what happens
+          when a swap is visible in the mempool before execution.
+        expected_findings:
+          - id: "missing-slippage"
+            description: "Identifies missing slippage protection"
+            required: true
+            points: 3
+          - id: "missing-deadline"
+            description: "Identifies missing deadline parameter"
+            required: true
+            points: 2
+          - id: "sandwich-attack"
+            description: "Explains sandwich attack or front-running"
+            required: true
+            points: 3
+          - id: "mitigations"
+            description: "Suggests proper mitigations"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies missing slippage protection"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["slippage", "minAmountOut", "minimum output", "price impact", "no slippage"]
+            - name: "Identifies missing deadline parameter"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["deadline", "timestamp", "expiry", "block.timestamp", "stale transaction"]
+            - name: "Explains sandwich attack or front-running"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["sandwich", "front-run", "MEV", "mempool", "back-run", "frontrunning"]
+            - name: "Suggests proper mitigations"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["minAmountOut", "deadline parameter", "commit-reveal", "private mempool", "Flashbots"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims the constant product formula itself is wrong when it is correctly implemented"
+            - flag: "-I"
+              condition: "Does not mention front-running or slippage protection"
+
+      - id: "cat6-hard"
+        difficulty: "hard"
+        title: "Flash Loan Oracle Manipulation in Lending Pool"
+        description: |
+          Review LendingPool.sol, a lending protocol that uses an on-chain AMM for
+          price discovery. Analyze how prices are determined and whether the oracle
+          mechanism can be manipulated.
+        source_files:
+          - "contracts/LendingPool.sol"
+        prompt: |
+          Trace the price calculation from getPrice() through _getAMMReserves().
+          Consider what happens if an attacker can temporarily change the AMM reserves
+          within a single transaction. Evaluate the oracle design and its resistance
+          to manipulation.
+        expected_findings:
+          - id: "spot-oracle"
+            description: "Identifies spot price oracle vulnerability"
+            required: true
+            points: 3
+          - id: "flash-loan-vector"
+            description: "Explains flash loan attack vector"
+            required: true
+            points: 3
+          - id: "exploit-chain"
+            description: "Describes the full exploit chain"
+            required: false
+            points: 2
+          - id: "twap-fix"
+            description: "Suggests TWAP or Chainlink oracle"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies spot price oracle vulnerability"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["spot price", "oracle manipulation", "price oracle", "reserves", "instantaneous"]
+            - name: "Explains flash loan attack vector"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["flash loan", "single transaction", "borrow", "manipulate reserves", "atomic"]
+            - name: "Describes the full exploit chain"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["inflate price", "borrow against", "undercollateralized", "profit", "repay flash"]
+            - name: "Suggests TWAP or Chainlink oracle"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["TWAP", "time-weighted", "Chainlink", "off-chain oracle", "price feed", "multiple blocks"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims the lending math is wrong when the collateral factor logic is correct"
+            - flag: "-I"
+              condition: "Does not connect the spot price oracle to flash loan manipulation"
+
+      - id: "cat6-difficult"
+        difficulty: "difficult"
+        title: "Proxy Storage Collision in Upgradeable Token"
+        description: |
+          Review UpgradeableToken.sol which contains a transparent proxy and two
+          implementation versions (TokenV1 and TokenV2). Analyze the storage layout
+          across the proxy and both implementations for any conflicts.
+        source_files:
+          - "contracts/UpgradeableToken.sol"
+        prompt: |
+          Map the storage slots used by the proxy contract, TokenV1, and TokenV2.
+          When TokenV2 is deployed behind the proxy, determine whether any storage
+          variables overlap or collide. Consider how delegatecall shares storage
+          between proxy and implementation.
+        expected_findings:
+          - id: "storage-collision"
+            description: "Identifies storage collision between proxy and implementation"
+            required: true
+            points: 3
+          - id: "colliding-vars"
+            description: "Pinpoints the colliding variables"
+            required: true
+            points: 3
+          - id: "impact"
+            description: "Explains the impact of the collision"
+            required: false
+            points: 2
+          - id: "storage-gap-fix"
+            description: "Suggests storage gap or EIP-1967 compliant layout"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies storage collision between proxy and implementation"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["storage collision", "storage slot", "overlap", "layout", "delegatecall storage"]
+            - name: "Pinpoints the colliding variables"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["totalFees", "feeCollector", "_initialized", "admin slot", "slot 8", "slot 9"]
+            - name: "Explains the impact of the collision"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["corrupted", "overwrite", "wrong value", "admin overwritten", "state corruption"]
+            - name: "Suggests storage gap or EIP-1967 compliant layout"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["storage gap", "__gap", "EIP-1967", "unstructured storage", "reserved slots", "diamond storage"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims EIP-1967 slots collide when they use keccak256-derived slots"
+            - flag: "-I"
+              condition: "Does not analyze storage layout across proxy and implementation"
+
+      - id: "cat6-hidden"
+        difficulty: "hidden"
+        title: "Hidden Mint and Rug Pull in Fee Token"
+        description: |
+          Review FeeToken.sol, an ERC20 token with a 2% transfer fee mechanism.
+          Audit the entire contract for any hidden backdoors or mechanisms that
+          could allow the owner to extract value beyond the stated fee.
+        source_files:
+          - "contracts/FeeToken.sol"
+        prompt: |
+          Carefully audit every line of the _transfer function. Look beyond the
+          obvious fee calculation. Consider edge cases with very large transfer
+          amounts and what happens in those code paths. Check whether the total
+          supply accounting is always correct.
+        expected_findings:
+          - id: "hidden-mint"
+            description: "Identifies the hidden mint backdoor"
+            required: true
+            points: 3
+          - id: "overflow-path"
+            description: "Locates the overflow-triggered code path"
+            required: true
+            points: 3
+          - id: "owner-extracts"
+            description: "Explains how owner extracts value"
+            required: false
+            points: 2
+          - id: "supply-discrepancy"
+            description: "Notes the supply accounting discrepancy"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies the hidden mint backdoor"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["hidden mint", "extra tokens", "totalSupply increase", "backdoor", "rug pull"]
+            - name: "Locates the overflow-triggered code path"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["type(uint256).max", "overflow", "large amount", "conditional mint", "bonus"]
+            - name: "Explains how owner extracts value"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["owner balance", "minted to owner", "inflat", "dump", "sell"]
+            - name: "Notes the supply accounting discrepancy"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["totalSupply", "accounting", "inconsistent", "mismatch", "untracked"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims the 2% fee itself is malicious when fee tokens are a common pattern"
+            - flag: "-I"
+              condition: "Only reviews the fee mechanism without checking for hidden code paths"

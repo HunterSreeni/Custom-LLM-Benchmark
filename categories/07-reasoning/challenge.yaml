@@ -1,0 +1,871 @@
+category:
+  id: 7
+  name: "Reasoning, Debugging & Data Extraction"
+  slug: "reasoning"
+  type: "3-phase"
+  tech_stack: ["Rust", "Python", "Node.js", "Java", "regex", "log formats"]
+
+phases:
+  - id: "a"
+    name: "Reasoning & Logic"
+    challenges:
+      - id: "cat7a-easy"
+        difficulty: "easy"
+        title: "Log Debugging - Root Cause Analysis"
+        description: "Analyze 50 lines of production logs from multiple services to identify the root cause of a production incident."
+        prompt: |
+          You are an SRE investigating a production incident. Below are the logs from the last few minutes
+          before and during the outage. Multiple services are affected.
+
+          Analyze these logs chronologically and answer:
+          1. What is the root cause of the incident?
+          2. What was the sequence of events that led to the outage?
+          3. What specific configuration change caused the problem?
+          4. What is the recommended immediate fix?
+
+          Be specific - cite timestamps and log lines in your analysis.
+        source_files:
+          - "fixtures/phase-a/production-logs.txt"
+        expected_findings:
+          - id: "identifies-deployment"
+            description: "Identifies the deployment at 14:31:55 as the trigger event"
+            required: true
+            points: 3
+          - id: "identifies-db-pool-config"
+            description: "Identifies DB_POOL_MAX changed from 50 to 5 (typo) as root cause"
+            required: true
+            points: 5
+          - id: "traces-cascade"
+            description: "Traces the cascade: bad config -> pool exhaustion -> connection errors -> 503s"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies deployment as trigger"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["deployment", "v2.15.0", "14:31:55", "deploy"]
+            - name: "Identifies DB pool size misconfiguration"
+              points: 4
+              match_type: "keyword"
+              match_terms: ["DB_POOL_MAX", "50 to 5", "pool size", "typo"]
+            - name: "Traces the full cascade"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["exhausted", "connection pool", "503", "cascade"]
+            - name: "Recommends rollback or config fix"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["rollback", "revert", "change back", "restore"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims a cause not supported by the logs"
+          - flag: "-I"
+            condition: "Fails to cite specific timestamps or log lines"
+
+      - id: "cat7a-medium"
+        difficulty: "medium"
+        title: "Rust CLI Performance Bug"
+        description: "Identify performance bottlenecks in a Rust CLI tool that processes log files too slowly."
+        prompt: |
+          A team has written a Rust CLI tool called `logfilter` that parses log files and filters
+          entries by keyword. Users report it takes ~45 seconds to process a 200MB log file, while
+          similar tools finish in under 3 seconds.
+
+          Review the source code and identify ALL performance issues. For each issue:
+          1. Describe the problem
+          2. Explain why it causes poor performance
+          3. Suggest the specific fix with code-level detail
+
+          Rank the issues from most impactful to least impactful.
+        source_files:
+          - "fixtures/phase-a/slow-rust-cli.rs"
+        expected_findings:
+          - id: "read-to-string"
+            description: "read_to_string loads entire file into memory instead of using BufReader"
+            required: true
+            points: 3
+          - id: "unnecessary-clone"
+            description: "Unnecessary String::clone() / to_string() in hot loop"
+            required: true
+            points: 3
+          - id: "vec-contains-dedup"
+            description: "O(n^2) deduplication using Vec::contains instead of HashSet"
+            required: true
+            points: 2
+          - id: "repeated-lowercase"
+            description: "to_lowercase() called on keywords every iteration instead of pre-computing"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies memory issue with read_to_string"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["read_to_string", "BufReader", "memory", "buffered"]
+            - name: "Identifies unnecessary cloning"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["clone", "to_string", "borrow", "reference", "&str"]
+            - name: "Identifies O(n^2) Vec deduplication"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["HashSet", "Vec::contains", "O(n^2)", "quadratic"]
+            - name: "Identifies repeated to_lowercase allocation"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["to_lowercase", "pre-compute", "allocation", "every iteration"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims performance issues that don't exist in the code"
+          - flag: "-I"
+            condition: "Fails to provide specific fix suggestions"
+
+      - id: "cat7a-hard"
+        difficulty: "hard"
+        title: "Architecture Flaw Detection"
+        description: "Find logical flaws in a microservice architecture proposal for an order processing pipeline."
+        prompt: |
+          Review the following architecture proposal for migrating an order processing system
+          from a monolith to microservices. The proposal has been written by a senior engineer
+          and is ready for architecture review.
+
+          Identify ALL logical flaws, race conditions, data consistency issues, and reliability
+          problems in this design. For each flaw:
+          1. Describe the problem clearly
+          2. Explain the failure scenario (what happens when things go wrong)
+          3. Suggest how to fix it
+
+          Focus on correctness and reliability, not style or preferences.
+        source_files:
+          - "fixtures/phase-a/architecture-proposal.md"
+        expected_findings:
+          - id: "no-idempotency"
+            description: "Fulfillment Service has no idempotency - re-processing a message causes duplicate charges and inventory reservations"
+            required: true
+            points: 4
+          - id: "auto-ack-danger"
+            description: "auto_ack=true means messages are acknowledged before processing completes - message lost on crash"
+            required: true
+            points: 3
+          - id: "no-dead-letter"
+            description: "No dead letter queue for permanently failed messages"
+            required: false
+            points: 2
+          - id: "no-saga-compensation"
+            description: "Multi-step process (reserve, charge, update) has no compensation/rollback if a middle step fails"
+            required: false
+            points: 3
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies idempotency problem"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["idempotency", "idempotent", "duplicate", "re-process"]
+            - name: "Identifies auto_ack danger"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["auto_ack", "acknowledge", "message loss", "crash"]
+            - name: "Identifies missing dead letter queue"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["dead letter", "DLQ", "poison", "failed messages"]
+            - name: "Identifies missing saga/compensation pattern"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["saga", "compensation", "rollback", "partial failure"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims flaws that are not actually present in the design"
+          - flag: "-I"
+            condition: "Only identifies surface-level issues and misses the critical flaws"
+
+      - id: "cat7a-difficult"
+        difficulty: "difficult"
+        title: "Root Cause Chain - Multi-Team Error Reports"
+        description: "Trace 5 error reports from different teams back to a single root cause through 4 layers of dependencies."
+        prompt: |
+          You are the incident commander for a P1 production incident. Five different teams have
+          filed error reports. Your job is to:
+
+          1. Read all 5 reports carefully
+          2. Identify the SINGLE root cause that explains ALL the symptoms
+          3. Trace the complete causal chain from root cause to each symptom
+          4. Determine which team's report contains the actual root cause
+          5. Recommend the correct fix (not band-aids for individual symptoms)
+
+          Think step by step. Start from the lowest layer and work upward.
+        source_files:
+          - "fixtures/phase-a/error-reports.md"
+        expected_findings:
+          - id: "root-cause-dns"
+            description: "Root cause is the cloud provider DNS partial outage combined with CoreDNS sequential policy"
+            required: true
+            points: 4
+          - id: "full-chain"
+            description: "Traces full chain: DNS outage -> slow resolution -> connection pool exhaustion -> payment timeout -> 500 errors"
+            required: true
+            points: 4
+          - id: "correct-fix"
+            description: "Recommends changing CoreDNS policy from sequential to random, or removing degraded upstream"
+            required: true
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies DNS as root cause"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["DNS", "outage", "resolver", "cloud provider"]
+            - name: "Identifies CoreDNS sequential policy as amplifier"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["sequential", "policy", "timeout", "CoreDNS"]
+            - name: "Traces complete causal chain"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["connection pool", "Stripe", "payment", "500"]
+            - name: "Recommends correct fix"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["random", "policy", "forwarder", "remove"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims a root cause not supported by the reports"
+          - flag: "-I"
+            condition: "Treats symptoms as independent issues rather than tracing the chain"
+
+      - id: "cat7a-hidden"
+        difficulty: "hidden"
+        title: "Insufficient Information Detection"
+        description: "A debugging problem that cannot be solved without requesting additional information."
+        prompt: |
+          A production service is experiencing performance degradation. Here is what we know:
+
+          Service: order-processing-service
+          Environment: Production (us-east-1)
+          Time: Started at approximately 14:00 UTC today
+
+          Metrics (last 30 minutes):
+          - CPU usage: 78% average (normal: 45%)
+          - Memory usage: 62% (normal: 55%)
+          - Request latency p99: 4.2s (normal: 0.8s)
+          - Error rate: 2.3% (normal: 0.1%)
+          - Request volume: 350 req/s (normal: 300 req/s)
+
+          Identify the root cause and provide a fix.
+        source_files: []
+        expected_findings:
+          - id: "asks-for-more-info"
+            description: "Recognizes that metrics alone are insufficient and asks for logs, code, traces, or recent changes"
+            required: true
+            points: 10
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Recognizes insufficient information"
+              points: 4
+              match_type: "keyword"
+              match_terms: ["insufficient", "not enough", "need more", "cannot determine", "more information"]
+            - name: "Asks for application logs"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["logs", "traces", "stack trace", "error log"]
+            - name: "Asks about recent changes"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["recent changes", "deployment", "config change", "what changed"]
+            - name: "Asks for code or architecture context"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["code", "dependencies", "downstream", "database", "architecture"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Confidently diagnoses a specific root cause without sufficient evidence"
+          - flag: "-I"
+            condition: "Provides a fix without acknowledging the information gap"
+
+  - id: "b"
+    name: "Stack Trace Diagnosis"
+    challenges:
+      - id: "cat7b-easy"
+        difficulty: "easy"
+        title: "Python Traceback - NoneType Error"
+        description: "Given a Python traceback and source code, identify the actual root cause (not just the crashing line)."
+        prompt: |
+          A Python web service is crashing with the traceback shown below. The source code
+          of the relevant module is also provided, along with the HTTP request that triggered it.
+
+          1. What line is crashing and why?
+          2. What is the ACTUAL root cause (not just the symptom)?
+          3. What is the correct fix? (Not just a band-aid for the crashing line)
+          4. Are there other similar bugs in the same code that haven't crashed yet?
+        source_files:
+          - "fixtures/phase-b/python-traceback.txt"
+        expected_findings:
+          - id: "identifies-get-returns-none"
+            description: "Identifies that .get() returns None for missing keys, and line 102 adds the field as None"
+            required: true
+            points: 4
+          - id: "root-cause-not-line-110"
+            description: "Root cause is line 102 (.get() setting None), not line 110 (.strip() crashing)"
+            required: true
+            points: 3
+          - id: "correct-fix"
+            description: "Fix should skip or default missing fields, not just add a null check at line 110"
+            required: true
+            points: 3
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies .get() as the source of None"
+              points: 3
+              match_type: "keyword"
+              match_terms: [".get()", "None", "missing", "optional"]
+            - name: "Distinguishes root cause from crash site"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["line 102", "sets to None", "root cause", "not line 110"]
+            - name: "Provides correct fix"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["skip", "default", "continue", "if field in data"]
+            - name: "Identifies other similar bugs in the code"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["address", "phone", "notes", "same pattern", "all fields"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims bugs not present in the code"
+          - flag: "-I"
+            condition: "Only suggests adding a null check at line 110 without addressing root cause"
+
+      - id: "cat7b-medium"
+        difficulty: "medium"
+        title: "Java Stack Trace - Finding Root Cause in Framework Noise"
+        description: "Navigate a 30+ frame Spring Boot stack trace to find the actual root cause buried in framework code."
+        prompt: |
+          A Spring Boot application is throwing errors on the user profile endpoint.
+          The stack trace is over 80 frames long, mostly Spring and Hibernate framework code.
+
+          1. What is the actual root cause error? (Ignore framework wrapping)
+          2. Which frame contains the actionable information?
+          3. What is the specific bug in the application code?
+          4. How should this be fixed?
+
+          Do not get lost in the framework noise - find the signal.
+        source_files:
+          - "fixtures/phase-b/spring-boot-trace.txt"
+        expected_findings:
+          - id: "finds-column-error"
+            description: "Finds the H2 error: Column USRNAME not found"
+            required: true
+            points: 4
+          - id: "identifies-typo"
+            description: "Identifies the @Column(name='usrname') typo - should be 'username'"
+            required: true
+            points: 4
+          - id: "correct-fix"
+            description: "Fix is to change @Column(name='usrname') to @Column(name='username') in the entity"
+            required: true
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Finds the H2 SQL syntax error"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["USRNAME", "Column", "not found", "JdbcSQLSyntaxErrorException"]
+            - name: "Identifies entity mapping typo"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["@Column", "usrname", "username", "typo"]
+            - name: "Explains the mismatch between entity and schema"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["entity", "schema", "mismatch", "database column"]
+            - name: "Provides correct fix"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["change", "username", "@Column", "fix"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Misidentifies the root cause as a Spring or Hibernate bug"
+          - flag: "-I"
+            condition: "Gets lost in framework frames and fails to find the actual error"
+
+      - id: "cat7b-hard"
+        difficulty: "hard"
+        title: "Node.js Async Stack Trace - Lost Context"
+        description: "Diagnose an unhandled promise rejection where the error originates 3 async hops from where it crashes."
+        prompt: |
+          A Node.js application is crashing with an UnhandledPromiseRejection. The error message
+          says "Failed to enrich user data" but the actual flow is more complex than it appears.
+
+          Review the error output, application logs, and source code. Then answer:
+
+          1. What promise is unhandled and why?
+          2. Where does the error ACTUALLY originate?
+          3. Why doesn't the try/catch in the route handler catch it?
+          4. What is the correct fix?
+          5. Reconstruct the actual timeline of async events.
+        source_files:
+          - "fixtures/phase-b/node-promise-error.txt"
+        expected_findings:
+          - id: "identifies-fire-and-forget"
+            description: "Identifies updateLastAccessed() as a fire-and-forget promise with no error handling"
+            required: true
+            points: 4
+          - id: "explains-orphaned-promise"
+            description: "Explains that the promise is orphaned - not part of Promise.all and not caught by route handler"
+            required: true
+            points: 3
+          - id: "correct-fix"
+            description: "Fix: either await updateLastAccessed, add .catch(), or handle with Promise.allSettled"
+            required: true
+            points: 3
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies fire-and-forget as the problem"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["fire-and-forget", "not awaited", "updateLastAccessed", "no await"]
+            - name: "Explains why try/catch doesn't help"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["orphaned", "Promise.all", "already rejected", "separate chain"]
+            - name: "Reconstructs the async timeline"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["timeline", "after", "503", "later", "4100ms"]
+            - name: "Provides correct fix"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["await", ".catch", "allSettled", "error handler"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Claims the error is from the Promise.all rejection"
+          - flag: "-I"
+            condition: "Suggests only fixing the try/catch without addressing the orphaned promise"
+
+      - id: "cat7b-difficult"
+        difficulty: "difficult"
+        title: "Multi-Service Log Correlation - Stale Cache"
+        description: "Correlate logs from 3 microservices using request IDs to find a cache invalidation bug causing overselling."
+        prompt: |
+          Three microservices are involved in order processing. Logs from all three are provided,
+          along with configuration context. A customer (support ticket SUP-44291) reports that their
+          order was approved but the item was actually out of stock.
+
+          1. Correlate the logs using request IDs to reconstruct what happened
+          2. Identify the root cause of the overselling bug
+          3. Explain why the cache is returning stale data
+          4. How many orders are affected and what is the extent of the oversell?
+          5. What configuration changes caused this bug?
+          6. Recommend both an immediate fix and a long-term fix
+        source_files:
+          - "fixtures/phase-b/microservice-logs.txt"
+        expected_findings:
+          - id: "cache-invalidation-disabled"
+            description: "CACHE_INVALIDATE_ON_WRITE=false means reservations don't update the cache"
+            required: true
+            points: 4
+          - id: "stale-cache-oversell"
+            description: "Cache shows available=15 for all 3 orders even though DB reservations are increasing"
+            required: true
+            points: 3
+          - id: "quantifies-impact"
+            description: "Total reserved=21 vs quantity=15, oversold by 6 units, 3 orders affected"
+            required: true
+            points: 3
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Identifies disabled cache invalidation"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["CACHE_INVALIDATE_ON_WRITE", "false", "disabled", "invalidation"]
+            - name: "Traces stale data through all 3 requests"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["stale", "cache", "available:15", "all three"]
+            - name: "Quantifies the oversell impact"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["21", "15", "-6", "oversold", "3 orders"]
+            - name: "Recommends re-enabling cache invalidation"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["enable", "invalidate", "CACHE_INVALIDATE_ON_WRITE", "true"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Misidentifies the root cause"
+          - flag: "-I"
+            condition: "Fails to correlate logs across services using request IDs"
+
+      - id: "cat7b-hidden"
+        difficulty: "hidden"
+        title: "Misleading Stack Trace - Wrong Module"
+        description: "A stack trace points to the Notification Service, but the actual bug is in the User Service's data migration."
+        prompt: |
+          The Notification Service is throwing NullPointerExceptions when sending order confirmation emails.
+          The stack trace and source code are provided below.
+
+          A junior developer has suggested adding a null check in the EmailSender class. Before approving
+          their pull request, review the full context and determine:
+
+          1. Where is the null value coming from?
+          2. Is the Notification Service code actually buggy, or is it working correctly?
+          3. What is the TRUE root cause?
+          4. What is the correct fix? Should the junior's PR be approved?
+          5. How many users are affected?
+        source_files:
+          - "fixtures/phase-b/misleading-trace.txt"
+        expected_findings:
+          - id: "traces-upstream"
+            description: "Traces the null email back through User Service to the data migration script"
+            required: true
+            points: 5
+          - id: "identifies-migration-bug"
+            description: "Identifies wrong column name in V42 migration: lp.email should be lp.contact_email"
+            required: true
+            points: 3
+          - id: "notification-code-correct"
+            description: "Recognizes that Notification Service is working correctly - it should fail on null email"
+            required: true
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Traces null upstream to User Service"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["User Service", "migration", "null email", "upstream"]
+            - name: "Identifies migration column name bug"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["contact_email", "lp.email", "wrong column", "V42"]
+            - name: "Recognizes Notification Service is correct"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["working correctly", "not buggy", "correct behavior", "should fail"]
+            - name: "Quantifies affected users (342)"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["342", "users", "affected", "NULL email"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Recommends fixing the Notification Service code as the primary fix"
+          - flag: "-I"
+            condition: "Approves the junior's null check PR without investigating upstream"
+
+  - id: "c"
+    name: "Regex & Data Extraction"
+    challenges:
+      - id: "cat7c-easy"
+        difficulty: "easy"
+        title: "Mixed-Format Log Pattern Extraction"
+        description: "Write regex patterns to extract timestamp, level, and message from 3 different log formats."
+        prompt: |
+          The file below contains log lines in 3 different formats:
+          1. Application format: `2026-04-03 14:32:15.123 [INFO] ServiceA - Connected to database`
+          2. Syslog format: `Apr  3 14:32:17 web-prod-01 sshd[28341]: Accepted publickey for user`
+          3. JSON format: `{"timestamp":"2026-04-03T14:32:20.000Z","level":"error","msg":"connection refused"}`
+
+          For each format, write a regex pattern that extracts:
+          - Timestamp (full timestamp including any milliseconds)
+          - Log level (INFO, WARN, ERROR, etc.)
+          - Message (the actual log message content)
+
+          Then write a single unified regex (or a strategy) that can handle all 3 formats.
+          Show example matches for at least 2 lines of each format.
+        source_files:
+          - "fixtures/phase-c/mixed-logs.txt"
+        expected_findings:
+          - id: "app-format-regex"
+            description: "Correct regex for application log format"
+            required: true
+            points: 3
+          - id: "syslog-format-regex"
+            description: "Correct regex for syslog format"
+            required: true
+            points: 3
+          - id: "json-format-regex"
+            description: "Correct regex for JSON format"
+            required: true
+            points: 2
+          - id: "unified-strategy"
+            description: "Provides a unified approach to handle all 3 formats"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Correct application log regex"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["\\d{4}-\\d{2}-\\d{2}", "\\[\\w+\\]", "capture group", "timestamp"]
+            - name: "Correct syslog regex"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["[A-Z][a-z]{2}", "sshd", "syslog", "host"]
+            - name: "Correct JSON regex"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["json", "timestamp", "level", "msg"]
+            - name: "Unified approach"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["alternation", "try each", "detect format", "unified"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Regex patterns are syntactically invalid"
+          - flag: "-I"
+            condition: "Only handles one format and ignores the others"
+
+      - id: "cat7c-medium"
+        difficulty: "medium"
+        title: "Semi-Structured Data Parsing"
+        description: "Parse a file mixing JSON, CSV, and free-text entries into a unified structured format."
+        prompt: |
+          The file below contains 20 transaction records in 3 different formats mixed together:
+          - JSON objects
+          - CSV rows
+          - Free-text descriptions
+
+          Parse ALL 20 entries and output them as a unified array of objects with these fields:
+          - id (string): Transaction ID (e.g., "TXN-001")
+          - type (string): "purchase", "refund", or "subscription"
+          - amount (number): Transaction amount
+          - currency (string): "USD", "EUR", "GBP"
+          - customer (string): Customer full name
+          - email (string): Customer email
+          - date (string): Date in YYYY-MM-DD format
+          - status (string): "completed", "pending", "active", "failed", "approved"
+
+          Show the parsing strategy for each format and output the complete unified dataset.
+        source_files:
+          - "fixtures/phase-c/semi-structured-data.txt"
+        expected_findings:
+          - id: "parses-all-20"
+            description: "Successfully parses all 20 entries"
+            required: true
+            points: 4
+          - id: "correct-fields"
+            description: "Extracts all 8 fields correctly for each entry"
+            required: true
+            points: 3
+          - id: "handles-free-text"
+            description: "Correctly parses free-text entries with varying formats"
+            required: true
+            points: 3
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Parses all 20 entries"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["TXN-001", "TXN-020", "20 entries", "all entries"]
+            - name: "Correct JSON parsing"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["JSON", "parse", "json.loads", "JSON.parse"]
+            - name: "Correct CSV parsing"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["CSV", "split", "comma", "delimiter"]
+            - name: "Correct free-text extraction"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["regex", "pattern", "extract", "free-text", "natural language"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Invents transaction data not present in the input"
+          - flag: "-I"
+            condition: "Skips or fails to parse free-text entries"
+
+      - id: "cat7c-hard"
+        difficulty: "hard"
+        title: "Multi-Source Log Correlation"
+        description: "Correlate Nginx access logs, application server logs, and DB slow query logs by request ID to build request timelines."
+        prompt: |
+          Below are logs from 3 different sources for the same application:
+          1. Nginx access log (request received and response sent)
+          2. Application server log (request processing, DB queries)
+          3. PostgreSQL slow query log (query execution details)
+
+          All sources share a common request ID field (X-Request-ID pattern like X-a1b2c3).
+
+          For each unique request ID:
+          1. Build a complete timeline showing when each event occurred
+          2. Calculate the total end-to-end latency
+          3. Identify where time was spent (network, application logic, database)
+          4. Flag any anomalies (slow queries, errors, deadlocks)
+
+          Present the results as a structured timeline for each request.
+        source_files:
+          - "fixtures/phase-c/multi-source-logs.txt"
+        expected_findings:
+          - id: "correlates-by-request-id"
+            description: "Successfully correlates events across all 3 log sources using request IDs"
+            required: true
+            points: 3
+          - id: "builds-timelines"
+            description: "Builds accurate timelines for each request"
+            required: true
+            points: 3
+          - id: "identifies-anomalies"
+            description: "Flags the deadlock (X-g7h8i9), slow query (SKU-999), and payment timeout (X-s9t0u1)"
+            required: true
+            points: 4
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Correlates across log sources"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["X-a1b2c3", "X-g7h8i9", "request ID", "correlate"]
+            - name: "Accurate timelines"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["timeline", "nginx", "app server", "database"]
+            - name: "Identifies deadlock"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["deadlock", "X-g7h8i9", "SKU-999", "4005ms"]
+            - name: "Identifies payment timeout"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["timeout", "X-s9t0u1", "30s", "payment"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Fabricates events not present in the logs"
+          - flag: "-I"
+            condition: "Fails to use request IDs for correlation"
+
+      - id: "cat7c-difficult"
+        difficulty: "difficult"
+        title: "IOC Extraction from Incident Report"
+        description: "Extract all indicators of compromise (IPs, domains, hashes, emails, file paths) from a prose incident report."
+        prompt: |
+          The following is a raw incident report describing a security breach.
+          Extract ALL indicators of compromise (IOCs) mentioned in the report and
+          categorize them.
+
+          Output a structured IOC list with the following categories:
+          1. IP Addresses (with context - C2, phishing, internal, etc.)
+          2. Domains (with context)
+          3. File Hashes (MD5 and SHA256, with associated filename)
+          4. Email Addresses (with context)
+          5. File Paths (with context)
+          6. Network Indicators (ports, protocols)
+          7. Persistence Mechanisms (registry keys, scheduled tasks)
+
+          For each IOC, note whether it is malicious, suspicious, or legitimate/internal.
+          Do NOT miss any IOCs - completeness is critical for incident response.
+        source_files:
+          - "fixtures/phase-c/incident-report.txt"
+        expected_findings:
+          - id: "extracts-ips"
+            description: "Extracts all IP addresses (45.33.32.156, 185.220.101.34, 91.219.237.229, 23.106.122.100, etc.)"
+            required: true
+            points: 3
+          - id: "extracts-domains"
+            description: "Extracts all domains (acme-benefits-portal.com, data-analytics-cdn.net, acme-corp-sso.com)"
+            required: true
+            points: 2
+          - id: "extracts-hashes"
+            description: "Extracts all file hashes (SHA256 and MD5) with associated filenames"
+            required: true
+            points: 2
+          - id: "extracts-file-paths"
+            description: "Extracts all file paths (C:\\Users\\mstevens\\Downloads\\..., C:\\ProgramData\\...)"
+            required: true
+            points: 1
+          - id: "categorizes-correctly"
+            description: "Correctly categorizes IOCs as malicious, suspicious, or legitimate"
+            required: false
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Extracts all IP addresses"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["45.33.32.156", "91.219.237.229", "185.220.101.34", "23.106.122.100"]
+            - name: "Extracts all domains"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["acme-benefits-portal", "data-analytics-cdn", "acme-corp-sso"]
+            - name: "Extracts file hashes"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["e3b0c44298fc1c149", "d41d8cd98f00b204", "SHA256"]
+            - name: "Categorizes IOCs correctly"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["malicious", "C2", "phishing", "legitimate"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Fabricates IOCs not present in the report"
+          - flag: "-I"
+            condition: "Misses more than 3 IOCs from the report"
+
+      - id: "cat7c-hidden"
+        difficulty: "hidden"
+        title: "Regex DoS Awareness"
+        description: "Write an email validation regex that is safe from catastrophic backtracking on pathological inputs."
+        prompt: |
+          Write a regex pattern to validate email addresses. The pattern must:
+          1. Match standard email formats (local@domain.tld)
+          2. Support dots, hyphens, underscores, and plus signs in the local part
+          3. Require at least one dot in the domain
+          4. Domain labels must start and end with alphanumeric characters
+
+          Test your regex against ALL inputs in the test file, including the "Pathological inputs" section.
+          Your regex must complete validation in reasonable time (under 100ms) for ALL inputs.
+
+          Explain any ReDoS (Regular Expression Denial of Service) considerations in your design.
+        source_files:
+          - "fixtures/phase-c/regex-dos-input.txt"
+        expected_findings:
+          - id: "safe-regex"
+            description: "Writes a regex without nested quantifiers that runs in linear time"
+            required: true
+            points: 5
+          - id: "explains-redos"
+            description: "Explains catastrophic backtracking and why nested quantifiers are dangerous"
+            required: true
+            points: 3
+          - id: "handles-pathological"
+            description: "Explicitly addresses the pathological inputs and confirms safe behavior"
+            required: true
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Regex is syntactically correct and matches valid emails"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["@", "\\.", "regex", "pattern"]
+            - name: "No nested quantifiers"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["no nested", "linear", "safe", "backtracking"]
+            - name: "Explains ReDoS risk"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["ReDoS", "catastrophic backtracking", "exponential", "denial of service"]
+            - name: "Tests against pathological inputs"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["pathological", "aaaa", "safe", "linear time"]
+        penalty_checks:
+          - flag: "-H"
+            condition: "Writes a regex with nested quantifiers that is vulnerable to ReDoS"
+          - flag: "-I"
+            condition: "Ignores the pathological inputs section entirely"

@@ -1,0 +1,67 @@
+Traceback (most recent call last):
+  File "/app/main.py", line 45, in handle_request
+    result = process_user_input(request.body)
+  File "/app/services/input_processor.py", line 78, in process_user_input
+    cleaned = sanitize_fields(parsed_data)
+  File "/app/services/input_processor.py", line 112, in sanitize_fields
+    data['name'] = data['name'].strip()
+AttributeError: 'NoneType' object has no attribute 'strip'
+
+--- Source Code: /app/services/input_processor.py ---
+
+ 60  def process_user_input(raw_body: str) -> dict:
+ 61      """Process and validate user input from request body."""
+ 62      try:
+ 63          parsed_data = json.loads(raw_body)
+ 64      except json.JSONDecodeError:
+ 65          raise ValidationError("Invalid JSON in request body")
+ 66
+ 67      # Validate required top-level keys
+ 68      required_keys = ['email', 'action']
+ 69      for key in required_keys:
+ 70          if key not in parsed_data:
+ 71              raise ValidationError(f"Missing required field: {key}")
+ 72
+ 73      # Note: 'name' is optional - users may or may not provide it
+ 74      # The API docs say: "name: string (optional)"
+ 75
+ 76      # Apply sanitization to all fields
+ 77      cleaned = sanitize_fields(parsed_data)
+ 78      return cleaned
+ 79
+ 80
+ 95  def sanitize_fields(data: dict) -> dict:
+ 96      """Sanitize all string fields in the input data."""
+ 97      # Whitelist of fields to sanitize
+ 98      fields_to_clean = ['name', 'email', 'address', 'phone', 'notes']
+ 99
+100      for field in fields_to_clean:
+101          # Use .get() to handle missing fields gracefully
+102          data[field] = data.get(field)  # BUG: .get() returns None for missing keys
+103
+104          # Problem: Even if field wasn't in original data, we've now SET it to None
+105          # Then we try to call .strip() on it below
+106
+107      # Now strip whitespace from all fields
+108      for field in fields_to_clean:
+109          if field in data:  # This check passes because line 102 ADDED the field as None
+110              data[field] = data[field].strip()  # CRASH: data[field] is None
+111
+112      # Also apply HTML entity encoding
+113      for field in fields_to_clean:
+114          if data.get(field):
+115              data[field] = html.escape(data[field])
+116
+117      return data
+
+--- Request that triggered the error ---
+POST /api/users/update HTTP/1.1
+Content-Type: application/json
+
+{
+    "email": "john@example.com",
+    "action": "update_profile"
+}
+
+Note: The request is valid per API spec - 'name' is documented as optional.
+The user simply didn't include it because they only wanted to update their email.

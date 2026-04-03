@@ -1,0 +1,63 @@
+name = "nexus-api-worker"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+account_id = "a1b2c3d4e5f6g7h8i9j0"
+
+[vars]
+ENVIRONMENT = "production"
+API_VERSION = "v2"
+API_SECRET = "sk-prod-abc123def456ghi789"
+ALLOWED_ORIGINS = "https://nexus-platform.com,https://app.nexus-platform.com"
+LOG_LEVEL = "info"
+RATE_LIMIT_RPM = "100"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "abcdef1234567890abcdef1234567890"
+preview_id = "fedcba0987654321fedcba0987654321"
+
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "11223344556677889900aabbccddeeff"
+
+[[r2_buckets]]
+binding = "STORAGE"
+bucket_name = "nexus-uploads"
+preview_bucket_name = "nexus-uploads-preview"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "nexus-prod"
+database_id = "aaaabbbb-cccc-dddd-eeee-ffff00001111"
+
+[env.staging]
+name = "nexus-api-worker-staging"
+vars = { ENVIRONMENT = "staging", API_VERSION = "v2", LOG_LEVEL = "debug" }
+
+[env.staging.triggers]
+crons = ["0 */6 * * *"]
+
+[[env.staging.kv_namespaces]]
+binding = "CACHE"
+id = "staging-cache-id-placeholder"
+
+[build]
+command = "npm run build"
+
+[build.upload]
+format = "modules"
+main = "./dist/index.js"
+
+# Worker routes
+[[routes]]
+pattern = "api.nexus-platform.com/*"
+zone_name = "nexus-platform.com"
+
+[[routes]]
+pattern = "api-staging.nexus-platform.com/*"
+zone_name = "nexus-platform.com"

@@ -1,0 +1,50 @@
+fake_packages:
+  - name: "react-hydra-state"
+    ecosystem: "npm"
+    description: "Hydration-safe state management for React SSR"
+    why_fake: "Package does not exist on npm registry"
+
+  - name: "flask-quickauth"
+    ecosystem: "pip"
+    description: "Quick authentication middleware for Flask"
+    why_fake: "Package does not exist on PyPI"
+
+  - name: "vue-reactivity-bridge"
+    ecosystem: "npm"
+    description: "Bridge between Vue 3 reactivity system and external state stores"
+    why_fake: "Package does not exist on npm registry"
+
+  - name: "django-autoserializer"
+    ecosystem: "pip"
+    description: "Automatic serializer generation from Django models with nested support"
+    why_fake: "Package does not exist on PyPI"
+
+  - name: "next-edge-cache"
+    ecosystem: "npm"
+    description: "Edge-compatible caching layer for Next.js middleware and API routes"
+    why_fake: "Package does not exist on npm registry"
+
+  - name: "fastapi-ratelimiter"
+    ecosystem: "pip"
+    description: "Token bucket rate limiting middleware for FastAPI with Redis backend"
+    why_fake: "Package does not exist on PyPI"
+
+  - name: "svelte-form-wizard"
+    ecosystem: "npm"
+    description: "Multi-step form wizard component with validation for SvelteKit"
+    why_fake: "Package does not exist on npm registry"
+
+  - name: "pandas-schemavalidator"
+    ecosystem: "pip"
+    description: "Schema validation and type enforcement for pandas DataFrames"
+    why_fake: "Package does not exist on PyPI"
+
+  - name: "astro-image-optimizer"
+    ecosystem: "npm"
+    description: "Build-time image optimization plugin for Astro with AVIF support"
+    why_fake: "Package does not exist on npm registry"
+
+  - name: "sqlalchemy-softdelete"
+    ecosystem: "pip"
+    description: "Soft delete mixin and query filtering for SQLAlchemy models"
+    why_fake: "Package does not exist on PyPI"
