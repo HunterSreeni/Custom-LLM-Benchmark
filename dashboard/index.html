@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SreeniBench - LLM Benchmark Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+      background: #0d1117;
+      color: #c9d1d9;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 24px;
+      color: #58a6ff;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      color: #8b949e;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .controls label {
+      color: #8b949e;
+      font-size: 13px;
+    }
+    .controls input[type="file"] {
+      background: #161b22;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .controls button {
+      background: #238636;
+      color: #fff;
+      border: none;
+      padding: 6px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .controls button:hover { background: #2ea043; }
+    .controls button.secondary {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .card h2 {
+      font-size: 16px;
+      color: #58a6ff;
+      margin-bottom: 12px;
+    }
+    .card.full-width {
+      grid-column: 1 / -1;
+    }
+    .radar-container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid #21262d;
+    }
+    th {
+      color: #8b949e;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    td.score { font-family: monospace; }
+    .pct-bar {
+      display: inline-block;
+      height: 8px;
+      border-radius: 4px;
+      background: #238636;
+      min-width: 2px;
+    }
+    .pct-bar.low { background: #da3633; }
+    .pct-bar.mid { background: #d29922; }
+    .pct-bar.high { background: #238636; }
+    .penalty-badge {
+      display: inline-block;
+      background: #da3633;
+      color: #fff;
+      font-size: 11px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      margin-right: 4px;
+    }
+    .penalty-badge.zero { background: #21262d; color: #8b949e; }
+    .rank { color: #d29922; font-weight: bold; }
+    .no-data {
+      color: #8b949e;
+      text-align: center;
+      padding: 40px;
+      font-style: italic;
+    }
+    #drop-zone {
+      border: 2px dashed #30363d;
+      border-radius: 8px;
+      padding: 30px;
+      text-align: center;
+      color: #8b949e;
+      margin-bottom: 24px;
+      transition: border-color 0.2s;
+    }
+    #drop-zone.dragover {
+      border-color: #58a6ff;
+      color: #58a6ff;
+    }
+  </style>
+</head>
+<body>
+  <h1>SreeniBench</h1>
+  <p class="subtitle">Custom LLM Benchmark - 13 categories, 119 challenges, 3,840 max points</p>
+
+  <div id="drop-zone">
+    Drop result JSON files here, or use the file picker below
+  </div>
+
+  <div class="controls">
+    <label>Load results:</label>
+    <input type="file" id="file-input" multiple accept=".json">
+    <button onclick="loadExample()">Load Example</button>
+    <button class="secondary" onclick="clearAll()">Clear All</button>
+  </div>
+
+  <div class="grid">
+    <div class="card full-width" id="rankings-card">
+      <h2>Rankings</h2>
+      <div id="rankings-content" class="no-data">No results loaded</div>
+    </div>
+
+    <div class="card">
+      <h2>Radar Comparison</h2>
+      <div class="radar-container">
+        <canvas id="radar-chart"></canvas>
+      </div>
+      <div id="radar-empty" class="no-data">Load results to see radar chart</div>
+    </div>
+
+    <div class="card">
+      <h2>Category Breakdown</h2>
+      <div id="category-content" class="no-data">No results loaded</div>
+    </div>
+
+    <div class="card full-width">
+      <h2>Penalty Summary</h2>
+      <div id="penalties-content" class="no-data">No results loaded</div>
+    </div>
+  </div>
+
+  <script>
+    const COLORS = [
+      '#58a6ff', '#f78166', '#7ee787', '#d2a8ff',
+      '#ffa657', '#ff7b72', '#79c0ff', '#d29922',
+    ];
+
+    const CATEGORY_LABELS = {
+      'security-whitebox': 'Whitebox Sec',
+      'security-blackbox': 'Blackbox Sec',
+      'bug-detection': 'Bug Detection',
+      'test-gen-qa-strategy': 'Test Gen/QA',
+      'code-generation': 'Code Gen',
+      'web3-audit': 'Web3 Audit',
+      'reasoning': 'Reasoning',
+      'writing': 'Writing',
+      'tool-use-agentic': 'Tool Use',
+      'stress-reliability': 'Stress',
+      'cicd-devops': 'CI/CD',
+      'code-review': 'Code Review',
+      'supply-chain': 'Supply Chain',
+    };
+
+    let loadedResults = [];
+    let radarChart = null;
+
+    // Drag and drop
+    const dropZone = document.getElementById('drop-zone');
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      handleFiles(e.dataTransfer.files);
+    });
+
+    document.getElementById('file-input').addEventListener('change', (e) => {
+      handleFiles(e.target.files);
+    });
+
+    function handleFiles(files) {
+      for (const file of files) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = JSON.parse(e.target.result);
+            if (data.model && data.grandTotal) {
+              // Remove existing result for same model
+              loadedResults = loadedResults.filter(r => r.model !== data.model);
+              loadedResults.push(data);
+              render();
+            }
+          } catch (err) {
+            console.error('Failed to parse:', file.name, err);
+          }
+        };
+        reader.readAsText(file);
+      }
+    }
+
+    function loadExample() {
+      // Create example data for demo
+      const example = {
+        model: 'claude-haiku-4.5 (example)',
+        runDate: new Date().toISOString(),
+        runnerVersion: '0.1.0',
+        grandTotal: {
+          categories: {
+            'bug-detection': { categorySlug: 'bug-detection', categoryScore: 95, categoryMax: 160, categoryPct: 59.4 },
+            'stress-reliability': { categorySlug: 'stress-reliability', categoryScore: 35, categoryMax: 160, categoryPct: 21.9 },
+          },
+          penaltiesSummary: { H: 0, S: 0, I: 0, G: 0 },
+          grandTotal: 130,
+          grandMax: 320,
+          grandPct: 40.6,
+        },
+      };
+      loadedResults.push(example);
+      render();
+    }
+
+    function clearAll() {
+      loadedResults = [];
+      render();
+    }
+
+    function pctClass(pct) {
+      if (pct >= 60) return 'high';
+      if (pct >= 30) return 'mid';
+      return 'low';
+    }
+
+    function render() {
+      renderRankings();
+      renderRadar();
+      renderCategories();
+      renderPenalties();
+    }
+
+    function renderRankings() {
+      const el = document.getElementById('rankings-content');
+      if (loadedResults.length === 0) {
+        el.className = 'no-data';
+        el.textContent = 'No results loaded';
+        return;
+      }
+
+      const sorted = [...loadedResults].sort(
+        (a, b) => b.grandTotal.grandTotal - a.grandTotal.grandTotal
+      );
+
+      let html = '<table><tr><th>#</th><th>Model</th><th>Score</th><th>Max</th><th>%</th><th>Bar</th></tr>';
+      sorted.forEach((r, i) => {
+        const gt = r.grandTotal;
+        const pct = gt.grandPct.toFixed(1);
+        html += `<tr>
+          <td class="rank">${i + 1}</td>
+          <td>${r.model}</td>
+          <td class="score">${gt.grandTotal}</td>
+          <td class="score">${gt.grandMax}</td>
+          <td class="score">${pct}%</td>
+          <td><span class="pct-bar ${pctClass(gt.grandPct)}" style="width:${Math.max(gt.grandPct, 2)}%"></span></td>
+        </tr>`;
+      });
+      html += '</table>';
+      el.className = '';
+      el.innerHTML = html;
+    }
+
+    function renderRadar() {
+      const canvas = document.getElementById('radar-chart');
+      const empty = document.getElementById('radar-empty');
+
+      if (loadedResults.length === 0) {
+        canvas.style.display = 'none';
+        empty.style.display = 'block';
+        if (radarChart) { radarChart.destroy(); radarChart = null; }
+        return;
+      }
+
+      canvas.style.display = 'block';
+      empty.style.display = 'none';
+
+      // Collect all category slugs across all results
+      const allSlugs = new Set();
+      loadedResults.forEach(r => {
+        Object.keys(r.grandTotal.categories).forEach(s => allSlugs.add(s));
+      });
+      const slugs = [...allSlugs].sort();
+      const labels = slugs.map(s => CATEGORY_LABELS[s] || s);
+
+      const datasets = loadedResults.map((r, i) => ({
+        label: r.model,
+        data: slugs.map(s => {
+          const cat = r.grandTotal.categories[s];
+          return cat ? cat.categoryPct : 0;
+        }),
+        borderColor: COLORS[i % COLORS.length],
+        backgroundColor: COLORS[i % COLORS.length] + '20',
+        pointBackgroundColor: COLORS[i % COLORS.length],
+        borderWidth: 2,
+        pointRadius: 3,
+      }));
+
+      if (radarChart) radarChart.destroy();
+
+      radarChart = new Chart(canvas, {
+        type: 'radar',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          scales: {
+            r: {
+              beginAtZero: true,
+              max: 100,
+              ticks: { color: '#8b949e', backdropColor: 'transparent', stepSize: 25 },
+              grid: { color: '#21262d' },
+              angleLines: { color: '#21262d' },
+              pointLabels: { color: '#c9d1d9', font: { size: 11 } },
+            },
+          },
+          plugins: {
+            legend: {
+              labels: { color: '#c9d1d9', font: { size: 12 } },
+              position: 'bottom',
+            },
+          },
+        },
+      });
+    }
+
+    function renderCategories() {
+      const el = document.getElementById('category-content');
+      if (loadedResults.length === 0) {
+        el.className = 'no-data';
+        el.textContent = 'No results loaded';
+        return;
+      }
+
+      const allSlugs = new Set();
+      loadedResults.forEach(r => {
+        Object.keys(r.grandTotal.categories).forEach(s => allSlugs.add(s));
+      });
+      const slugs = [...allSlugs].sort();
+
+      let html = '<table><tr><th>Category</th>';
+      loadedResults.forEach(r => { html += `<th>${r.model.split(' ')[0]}</th>`; });
+      html += '</tr>';
+
+      for (const slug of slugs) {
+        html += `<tr><td>${CATEGORY_LABELS[slug] || slug}</td>`;
+        for (const r of loadedResults) {
+          const cat = r.grandTotal.categories[slug];
+          if (cat) {
+            const pct = cat.categoryPct.toFixed(0);
+            html += `<td class="score">${cat.categoryScore}/${cat.categoryMax} (${pct}%)</td>`;
+          } else {
+            html += '<td class="score">-</td>';
+          }
+        }
+        html += '</tr>';
+      }
+      html += '</table>';
+      el.className = '';
+      el.innerHTML = html;
+    }
+
+    function renderPenalties() {
+      const el = document.getElementById('penalties-content');
+      if (loadedResults.length === 0) {
+        el.className = 'no-data';
+        el.textContent = 'No results loaded';
+        return;
+      }
+
+      let html = '<table><tr><th>Model</th><th>Hallucination (H)</th><th>Security (S)</th><th>Ignored (I)</th><th>Gave Up (G)</th><th>Total</th></tr>';
+      for (const r of loadedResults) {
+        const p = r.grandTotal.penaltiesSummary;
+        const total = p.H + p.S + p.I + p.G;
+        const badge = (val) => `<span class="penalty-badge ${val === 0 ? 'zero' : ''}">${val}</span>`;
+        html += `<tr>
+          <td>${r.model}</td>
+          <td>${badge(p.H)}</td>
+          <td>${badge(p.S)}</td>
+          <td>${badge(p.I)}</td>
+          <td>${badge(p.G)}</td>
+          <td>${badge(total)}</td>
+        </tr>`;
+      }
+      html += '</table>';
+      el.className = '';
+      el.innerHTML = html;
+    }
+  </script>
+</body>
+</html>
