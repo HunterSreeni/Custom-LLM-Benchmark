@@ -9,6 +9,7 @@ export function writeResults(
   outputDir: string,
   modelId: string,
   grandTotal: GrandTotal,
+  fileBase?: string,
 ): void {
   mkdirSync(outputDir, { recursive: true });
 
@@ -19,7 +20,8 @@ export function writeResults(
     grandTotal,
   };
 
-  const filePath = join(outputDir, `${modelId.replace(/\//g, '_')}.json`);
+  const fileName = fileBase ?? modelId.replace(/\//g, '_');
+  const filePath = join(outputDir, `${fileName}.json`);
   writeFileSync(filePath, JSON.stringify(result, null, 2), 'utf-8');
 
   console.log(`Results written to: ${filePath}`);

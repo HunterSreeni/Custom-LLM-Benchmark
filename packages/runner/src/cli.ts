@@ -145,14 +145,35 @@ const MODEL_PRESETS: Record<string, Omit<ModelConfig, 'id'>> = {
     model: 'glm-5',
     baseUrl: 'https://ollama.com/api',
     maxTokens: 4096,
-    temperature: 0,
+    temperature: 0.6,
   },
   'kimi-k2.5': {
     provider: 'ollama',
     model: 'kimi-k2.5',
     baseUrl: 'https://ollama.com/api',
     maxTokens: 4096,
+    temperature: 0.6,
+  },
+  'nemotron-3-super': {
+    provider: 'ollama',
+    model: 'nemotron-3-super',
+    baseUrl: 'https://ollama.com/api',
+    maxTokens: 4096,
     temperature: 0,
+  },
+  'qwen3.5': {
+    provider: 'ollama',
+    model: 'qwen3.5',
+    baseUrl: 'https://ollama.com/api',
+    maxTokens: 4096,
+    temperature: 0.7,
+  },
+  'minimax-m2.7': {
+    provider: 'ollama',
+    model: 'minimax-m2.7',
+    baseUrl: 'https://ollama.com/api',
+    maxTokens: 4096,
+    temperature: 1.0,
   },
 
   // --- Ollama (local, free) ---
@@ -502,14 +523,21 @@ program
       // Grand total
       const grand = scoreGrandTotal(allCategoryScores, allPenalties);
 
+      // Build filename suffix from categories to avoid overwrites
+      // e.g. "nemotron-3-super-cat10-09-06-08" or "nemotron-3-super-all"
+      const catSuffix = categories.length > 0
+        ? `-cat${categories.join('-')}`
+        : '-all';
+      const fileBase = `${modelConfig.id.replace(/\//g, '_')}${catSuffix}`;
+
       // Write results (include token usage)
-      writeResults(outputDir, modelConfig.id, grand);
+      writeResults(outputDir, modelConfig.id, grand, fileBase);
 
       // Write raw responses for review
       const { writeFileSync: writeFile, mkdirSync: mkDir } = await import('node:fs');
       const { join: joinPath } = await import('node:path');
       mkDir(outputDir, { recursive: true });
-      const responsesPath = joinPath(outputDir, `${modelConfig.id.replace(/\//g, '_')}-responses.json`);
+      const responsesPath = joinPath(outputDir, `${fileBase}-responses.json`);
       writeFile(responsesPath, JSON.stringify(rawResponses, null, 2), 'utf-8');
       console.log(`Responses written to: ${responsesPath}`);
 

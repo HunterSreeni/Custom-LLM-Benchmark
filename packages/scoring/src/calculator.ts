@@ -180,14 +180,16 @@ export function scoreCategory(
   const maxBonus = getCategoryMaxBonus(categoryType);
   const maxTotal = maxBase + maxBonus;
 
+  const cappedScore = Math.min(totalScore, maxTotal);
+
   return {
     categoryId,
     categorySlug,
     categoryType,
     phases,
-    categoryScore: totalScore,
+    categoryScore: cappedScore,
     categoryMax: maxTotal,
-    categoryPct: maxTotal > 0 ? (totalScore / maxTotal) * 100 : 0,
+    categoryPct: maxTotal > 0 ? (cappedScore / maxTotal) * 100 : 0,
   };
 }
 
