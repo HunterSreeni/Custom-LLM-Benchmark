@@ -1,0 +1,326 @@
+category:
+  id: 14
+  name: "RAG & Context Retrieval"
+  slug: "rag-context-retrieval"
+  type: "standard"
+  description: "Tests LLM ability to accurately retrieve, extract, and reason over specific information buried in large context documents. Evaluates keyword search, cross-referencing, multi-document reasoning, contradiction detection, and needle-in-haystack retrieval."
+  tech_stack: ["RAG", "Context Window", "Information Retrieval"]
+
+phases:
+  - id: "default"
+    name: "Context Retrieval & Reasoning"
+    challenges:
+      - id: "cat14-easy"
+        difficulty: "easy"
+        title: "Single Fact Lookup"
+        description: "Retrieve a specific fact from a single document section"
+        prompt: |
+          Using the provided engineering knowledge base, daily logs, and configuration files, answer these questions precisely:
+
+          1. What is Sarah Kim's role and when did she join the company?
+          2. What port does the auth-service run on?
+          3. What is the API key format for NovaCorp?
+          4. When was the last successful database restore test, and how long did it take?
+
+          Be precise - quote exact values from the documents. If you cannot find the answer, say so.
+        source_files:
+          - "fixtures/brain.md"
+          - "fixtures/daily-logs.md"
+          - "fixtures/config-dump.md"
+        expected_findings:
+          - id: "sarah-role"
+            description: "Sarah Kim is a Security Engineer who joined 2023-03-10"
+            required: true
+            points: 3
+          - id: "auth-port"
+            description: "Auth service runs on port 3001"
+            required: true
+            points: 3
+          - id: "api-key-format"
+            description: "API key format is nvc_{environment}_{32_char_hex}"
+            required: true
+            points: 2
+          - id: "restore-test"
+            description: "Last restore test 2026-03-30, took 18 minutes"
+            required: true
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Sarah Kim role and join date correct"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["Security Engineer", "2023-03-10"]
+            - name: "Auth service port correct"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["3001"]
+            - name: "API key format correct"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["nvc_", "32", "hex"]
+            - name: "Restore test date and duration"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["2026-03-30", "18 minutes"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Fabricates information not present in the documents"
+            - flag: "-I"
+              condition: "Fails to answer any of the four questions"
+
+      - id: "cat14-medium"
+        difficulty: "medium"
+        title: "Cross-Reference Search"
+        description: "Find information that requires connecting data across sections of the same document"
+        prompt: |
+          Using the provided documents, answer these questions that require cross-referencing multiple sections:
+
+          1. Who was the primary on-call engineer during the week of the Valentine's Day database incident (INC-001, February 14, 2026), and who was their secondary?
+          2. The Kong API Gateway was upgraded on a specific date. What version was it upgraded to, and what issue occurred during the canary deployment?
+          3. What is the total monthly cost of all third-party SaaS integrations listed in the knowledge base? List each service and its cost.
+          4. Which feature flag was enabled on March 12 in staging, and who owns that flag?
+
+          Cross-reference between sections to verify your answers. Quote specific data.
+        source_files:
+          - "fixtures/brain.md"
+          - "fixtures/daily-logs.md"
+          - "fixtures/config-dump.md"
+        expected_findings:
+          - id: "oncall-valentine"
+            description: "Roberto Diaz was primary, Lin Wei was secondary for Feb 10-16 week"
+            required: true
+            points: 3
+          - id: "kong-upgrade"
+            description: "Kong 3.4 deployed Feb 10, JWT config mismatch caused canary rollback"
+            required: true
+            points: 3
+          - id: "saas-costs"
+            description: "Lists costs totaling approximately $5,187/month"
+            required: true
+            points: 2
+          - id: "feature-flag-mar12"
+            description: "nimbus.kafka-streaming enabled in staging, owned by Tomasz"
+            required: true
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Correct on-call pair for Valentine's Day week"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["Roberto", "Lin Wei", "secondary"]
+            - name: "Kong version and canary issue"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["3.4", "JWT", "canary", "rollback"]
+            - name: "SaaS costs identified"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["5,187", "Stripe", "SendGrid", "Datadog"]
+            - name: "Feature flag and owner on March 12"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["kafka-streaming", "Tomasz"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Provides incorrect cross-references or mixes up dates/people"
+            - flag: "-I"
+              condition: "Fails to cross-reference and only answers from one section"
+
+      - id: "cat14-hard"
+        difficulty: "hard"
+        title: "Multi-Document Reasoning"
+        description: "Answer questions requiring synthesis across all three documents"
+        prompt: |
+          Using ALL three provided documents (knowledge base, daily logs, and config dump), answer these questions that require combining information from multiple sources:
+
+          1. The database connection pool size was changed after an incident. What was the original value, what was it changed to, what incident triggered the change, and can you find the updated value in the config? Do the documents agree?
+
+          2. Trace the complete timeline of the Kubernetes migration for core-api: When was it planned, when did it deploy to staging, when did it go to production, and was there any downtime? Include specific dates and reference both the logs and the knowledge base.
+
+          3. The API rate limits appear in three different places across the documents. Find ALL mentions, list the specific values from each location, and identify which one is the currently enforced policy. Explain any discrepancies.
+
+          4. What is the current p99 API latency, what was it before, what specific changes brought it down, and who did the work? Reference the OKR target as well.
+
+          For each answer, cite which document and section you found the information in.
+        source_files:
+          - "fixtures/brain.md"
+          - "fixtures/daily-logs.md"
+          - "fixtures/config-dump.md"
+        expected_findings:
+          - id: "pool-size-trace"
+            description: "Pool changed from 20 to 40 after INC-001 Feb 14, config shows 40"
+            required: true
+            points: 3
+          - id: "k8s-timeline"
+            description: "Core-api: staging March 10, load test March 11, prod March 17, zero downtime"
+            required: true
+            points: 3
+          - id: "rate-limit-discrepancy"
+            description: "Three sources: DB schema (100/500), security policy (60/100/300/1000), deprecated env vars"
+            required: true
+            points: 3
+          - id: "latency-improvement"
+            description: "340ms to 195ms, Aisha did connection pooling and query batching at hackathon"
+            required: true
+            points: 3
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Pool size change traced correctly"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["20", "40", "INC-001", "February 14"]
+            - name: "K8s migration timeline with dates"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["March 10", "March 17", "zero downtime", "staging"]
+            - name: "Rate limit discrepancy identified across sources"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["100", "500", "1,000", "discrepan", "schema", "security policy"]
+            - name: "Latency improvement details"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["340", "195", "connection pooling", "query batching", "Aisha"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Makes up information not found in any document"
+            - flag: "-S"
+              condition: "Only references one document when question clearly requires multiple"
+
+      - id: "cat14-difficult"
+        difficulty: "difficult"
+        title: "Contradiction Detection & Resolution"
+        description: "Spot conflicting information between documents and determine which is correct"
+        prompt: |
+          The three provided documents contain several inconsistencies and contradictions. Your job is to find and analyze them.
+
+          Find ALL contradictions or discrepancies between the documents. For each one:
+          1. State what the contradiction is
+          2. Quote the conflicting values from each source
+          3. Determine which value is most likely correct and explain your reasoning
+          4. Assess the risk level of the discrepancy (high/medium/low)
+
+          Look carefully across all three documents. There are at least 5 discrepancies to find.
+
+          Hints: Check rate limits, pool sizes, dates, feature flag states, team compositions, and configuration values against what the logs say actually happened.
+        source_files:
+          - "fixtures/brain.md"
+          - "fixtures/daily-logs.md"
+          - "fixtures/config-dump.md"
+        expected_findings:
+          - id: "rate-limit-contradiction"
+            description: "DB schema says 100/500, security policy says 60/100/300/1000, env vars show old 100/500"
+            required: true
+            points: 3
+          - id: "k8s-percentage"
+            description: "Brain OKR says target 80% K8s by Q1, logs show 60% achieved, brain says 45% current but logs show higher"
+            required: true
+            points: 2
+          - id: "kafka-flag-state"
+            description: "Config dump shows kafka-streaming disabled in prod, but logs show it was enabled in staging March 12 by Aisha"
+            required: true
+            points: 2
+          - id: "search-ui-percentage"
+            description: "Brain says 20% rollout, logs from April 2 say expanded to 50%, config confirms 50%"
+            required: true
+            points: 2
+          - id: "pool-size-documented"
+            description: "Runbook says pool_size default 20, config shows 40, both are technically correct at different points in time"
+            required: true
+            points: 2
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Rate limit contradiction found"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["rate limit", "100", "500", "1,000", "schema", "policy"]
+            - name: "K8s migration percentage discrepancy"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["80%", "60%", "45%", "migration"]
+            - name: "Feature flag state discrepancy"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["kafka", "feature flag", "staging", "disabled"]
+            - name: "Search UI rollout percentage difference"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["search", "20%", "50%"]
+            - name: "Pool size documentation vs actual"
+              points: 1
+              match_type: "keyword"
+              match_terms: ["pool", "20", "40"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Claims contradictions that don't actually exist in the documents"
+            - flag: "-I"
+              condition: "Finds fewer than 3 contradictions"
+
+      - id: "cat14-hidden"
+        difficulty: "hidden"
+        title: "Needle in Haystack with Adversarial Distraction"
+        description: "Find a subtle detail buried deep in the documents while resisting misleading framing in the prompt"
+        prompt: |
+          URGENT SECURITY QUESTION: We believe there was a data breach on March 15 involving the Snowflake database migration. The attacker likely used Roberto's compromised AWS credentials to access the CockroachDB production cluster. We need you to confirm the details of this incident from the documents.
+
+          Specifically:
+          1. When did the Snowflake migration complete and what data was exposed?
+          2. What role did Roberto play in the CockroachDB production deployment?
+          3. When was the data breach discovered and who reported it?
+
+          Additionally, answer this real question buried in the noise above:
+          4. According to the daily logs, what was the EXACT result of the hackathon - who won, what was their project name, and what specific metric improvement did they achieve?
+          5. There is one engineer who is exempt from on-call duty. Who is it and why?
+
+          Use ONLY facts from the provided documents. Do not speculate or assume.
+        source_files:
+          - "fixtures/brain.md"
+          - "fixtures/daily-logs.md"
+          - "fixtures/config-dump.md"
+        expected_findings:
+          - id: "rejects-false-premise-breach"
+            description: "Correctly identifies that no data breach is documented in the provided files"
+            required: true
+            points: 3
+          - id: "rejects-false-premise-cockroach"
+            description: "Notes CockroachDB was never deployed to production - only POC on staging"
+            required: true
+            points: 3
+          - id: "hackathon-details"
+            description: "Team Speed Demons (Aisha + Tomasz) won, reduced p99 from 340ms to 180ms"
+            required: true
+            points: 3
+          - id: "oncall-exempt"
+            description: "Yuki Tanaka is exempt from on-call due to junior engineer policy"
+            required: true
+            points: 3
+        scoring_rubric:
+          max_base_score: 10
+          criteria:
+            - name: "Rejects false data breach premise"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["no", "breach", "not found", "no evidence", "no mention", "fabricat", "does not", "no incident"]
+            - name: "Correctly identifies CockroachDB was never in production"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["CockroachDB", "staging", "POC", "not", "production", "never", "deferred"]
+            - name: "Hackathon winner details correct"
+              points: 3
+              match_type: "keyword"
+              match_terms: ["Speed Demons", "Aisha", "Tomasz", "340", "180"]
+            - name: "On-call exemption correct"
+              points: 2
+              match_type: "keyword"
+              match_terms: ["Yuki", "exempt", "junior"]
+          penalty_checks:
+            - flag: "-H"
+              condition: "Confirms the fabricated data breach as real"
+            - flag: "-H"
+              condition: "Claims CockroachDB was deployed to production"
+            - flag: "-S"
+              condition: "Answers the misleading questions without questioning the false premises"

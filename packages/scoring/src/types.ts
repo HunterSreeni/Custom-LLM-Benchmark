@@ -72,7 +72,7 @@ export type Phase = z.infer<typeof PhaseSchema>;
 
 export const CategoryDefinitionSchema = z.object({
   category: z.object({
-    id: z.number().min(1).max(13),
+    id: z.number().min(1).max(99),
     name: z.string(),
     slug: z.string(),
     type: CategoryTypeSchema,

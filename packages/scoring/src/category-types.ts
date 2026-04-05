@@ -10,7 +10,7 @@ const PHASE_COUNTS: Record<CategoryType, number> = {
   '3-phase': 3,
 };
 
-// Standard categories (1 phase): 1, 3, 6, 9, 10
+// Standard categories (1 phase): 1, 3, 6, 9, 10, 14
 // 2-phase categories: 2, 4, 8, 12, 13
 // 3-phase categories: 5, 7, 11
 
@@ -28,6 +28,7 @@ export const CATEGORY_TYPE_MAP: Record<number, CategoryType> = {
   11: '3-phase',
   12: '2-phase',
   13: '2-phase',
+  14: 'standard',
 };
 
 export function getPhaseCount(type: CategoryType): number {

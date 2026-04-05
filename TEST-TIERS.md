@@ -12,11 +12,12 @@ Quick reference for choosing which categories to run based on time/resource cons
 | 09 | Tool-Use-Agentic | 56K | 5 tests | AI tool integration, prompt engineering |
 | 06 | Web3-Audit | 60K | 5 tests | Smart contract auditing (Solidity) |
 | 08 | Writing | 72K | 10 tests | Technical writing, instruction following |
+| 14 | RAG-Context-Retrieval | 77K | 5 tests | Document search, cross-referencing, contradiction detection |
 
-**Total: ~232K, 26 tests**
+**Total: ~309K, 31 tests**
 
 ```bash
-npm run bench -- --models "your-model" --categories "10,09,06,08"
+npm run bench -- --models "your-model" --categories "10,09,06,08,14"
 ```
 
 ---
