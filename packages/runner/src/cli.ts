@@ -139,6 +139,22 @@ const MODEL_PRESETS: Record<string, Omit<ModelConfig, 'id'>> = {
     temperature: 0,
   },
 
+  // --- Ollama Cloud ---
+  'glm-5': {
+    provider: 'ollama',
+    model: 'glm-5',
+    baseUrl: 'https://ollama.com/api',
+    maxTokens: 4096,
+    temperature: 0,
+  },
+  'kimi-k2.5': {
+    provider: 'ollama',
+    model: 'kimi-k2.5',
+    baseUrl: 'https://ollama.com/api',
+    maxTokens: 4096,
+    temperature: 0,
+  },
+
   // --- Ollama (local, free) ---
   'ollama-llama3': {
     provider: 'ollama',
@@ -366,6 +382,20 @@ program
       const provider = createProvider(modelConfig);
       const allCategoryScores = [];
       const allPenalties: PenaltyFlag[] = [];
+      let totalInputTokens = 0;
+      let totalOutputTokens = 0;
+      const rawResponses: Array<{
+        categoryName: string;
+        challengeId: string;
+        difficulty: string;
+        title: string;
+        score: number;
+        maxScore: number;
+        pct: number;
+        findingsMatched: string[];
+        expectedFindings: Array<{ id: string; description: string }>;
+        rawResponse: string;
+      }> = [];
 
       for (const { yamlPath, categoryDir } of challengeFiles) {
         let categoryDef;
@@ -394,6 +424,9 @@ program
 
               // Call LLM
               const llmResponse = await provider.complete(fullPrompt, modelConfig);
+
+              totalInputTokens += llmResponse.inputTokens;
+              totalOutputTokens += llmResponse.outputTokens;
 
               // Skip scoring if the response is an API error
               if (llmResponse.content.startsWith('[ERROR]')) {
@@ -426,11 +459,25 @@ program
               challengeScores.push(score);
               allPenalties.push(...evaluation.penalties);
 
+              // Capture raw response for review
+              rawResponses.push({
+                categoryName: cat.name,
+                challengeId: challenge.id,
+                difficulty: challenge.difficulty,
+                title: challenge.title,
+                score: score.weightedScore,
+                maxScore: score.maxWeighted,
+                pct: score.maxWeighted > 0 ? Math.round((score.weightedScore / score.maxWeighted) * 100) : 0,
+                findingsMatched: score.findingsMatched,
+                expectedFindings: (challenge.expected_findings ?? []).map((f: { id: string; description: string }) => ({ id: f.id, description: f.description })),
+                rawResponse: llmResponse.content,
+              });
+
               const pctOfMax = score.maxWeighted > 0
                 ? Math.round((score.weightedScore / score.maxWeighted) * 100)
                 : 0;
               console.log(
-                `${score.weightedScore}/${score.maxWeighted} pts (${pctOfMax}%) [${(llmResponse.responseTimeMs / 1000).toFixed(1)}s]`,
+                `${score.weightedScore}/${score.maxWeighted} pts (${pctOfMax}%) [${(llmResponse.responseTimeMs / 1000).toFixed(1)}s] | tokens: ${llmResponse.inputTokens} in / ${llmResponse.outputTokens} out`,
               );
 
               // Log errors or empty responses
@@ -455,9 +502,21 @@ program
       // Grand total
       const grand = scoreGrandTotal(allCategoryScores, allPenalties);
 
-      // Write results
+      // Write results (include token usage)
       writeResults(outputDir, modelConfig.id, grand);
+
+      // Write raw responses for review
+      const { writeFileSync: writeFile, mkdirSync: mkDir } = await import('node:fs');
+      const { join: joinPath } = await import('node:path');
+      mkDir(outputDir, { recursive: true });
+      const responsesPath = joinPath(outputDir, `${modelConfig.id.replace(/\//g, '_')}-responses.json`);
+      writeFile(responsesPath, JSON.stringify(rawResponses, null, 2), 'utf-8');
+      console.log(`Responses written to: ${responsesPath}`);
+
       printSummary(grand);
+
+      console.log(`  Token Usage: ${totalInputTokens.toLocaleString()} input + ${totalOutputTokens.toLocaleString()} output = ${(totalInputTokens + totalOutputTokens).toLocaleString()} total`);
+      console.log('');
     }
 
     console.log('\nBenchmark complete.');

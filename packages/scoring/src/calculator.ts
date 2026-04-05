@@ -14,13 +14,67 @@ import { getCategoryMaxBase, getCategoryMaxBonus } from './category-types.js';
 
 // --- Criterion Matching ---
 
-function matchKeyword(response: string, terms: string[]): boolean {
+/**
+ * Keyword match with partial credit.
+ * If all terms match: full points.
+ * If some terms match: proportional points (rounded down).
+ * Minimum 1 term must match for any credit.
+ */
+function matchKeywordPartial(response: string, terms: string[], maxPoints: number): number {
+  if (terms.length === 0) return 0;
   const lower = response.toLowerCase();
-  return terms.every(term => lower.includes(term.toLowerCase()));
+  const matched = terms.filter(term => lower.includes(term.toLowerCase())).length;
+  if (matched === 0) return 0;
+  if (matched === terms.length) return maxPoints;
+  // Partial credit: proportional to terms matched, floored
+  return Math.floor(maxPoints * (matched / terms.length));
 }
 
 function matchExact(response: string, terms: string[]): boolean {
   return terms.every(term => response.includes(term));
+}
+
+/**
+ * Fuzzy/semantic matching: checks for term variants, synonyms,
+ * and partial string overlap beyond strict keyword inclusion.
+ */
+function matchSemantic(response: string, terms: string[], maxPoints: number): number {
+  if (terms.length === 0) return 0;
+  const lower = response.toLowerCase();
+  let matched = 0;
+
+  for (const term of terms) {
+    const termLower = term.toLowerCase();
+    // Direct match
+    if (lower.includes(termLower)) {
+      matched++;
+      continue;
+    }
+    // Hyphen/space/underscore variants (e.g. "re-entrancy" vs "reentrancy")
+    const normalized = termLower.replace(/[-_\s]/g, '');
+    const responseNormalized = lower.replace(/[-_\s]/g, '');
+    if (responseNormalized.includes(normalized)) {
+      matched++;
+      continue;
+    }
+    // Plural/singular (simple s suffix)
+    if (lower.includes(termLower + 's') || (termLower.endsWith('s') && lower.includes(termLower.slice(0, -1)))) {
+      matched++;
+      continue;
+    }
+    // Word stem match: if the term is 5+ chars, check if first 80% of chars appear as a word prefix
+    if (termLower.length >= 5) {
+      const stem = termLower.slice(0, Math.ceil(termLower.length * 0.8));
+      if (lower.includes(stem)) {
+        matched += 0.7; // partial credit for stem match
+        continue;
+      }
+    }
+  }
+
+  if (matched < 0.5) return 0;
+  if (matched >= terms.length) return maxPoints;
+  return Math.floor(maxPoints * (matched / terms.length));
 }
 
 export function evaluateCriterion(
@@ -31,12 +85,11 @@ export function evaluateCriterion(
 
   switch (criterion.match_type) {
     case 'keyword':
-      return matchKeyword(response, terms) ? criterion.points : 0;
+      return matchKeywordPartial(response, terms, criterion.points);
     case 'exact':
       return matchExact(response, terms) ? criterion.points : 0;
     case 'semantic':
-      // Semantic matching requires LLM judge - return 0 for now, Phase 2+
-      return 0;
+      return matchSemantic(response, terms, criterion.points);
     case 'manual':
       // Manual review required - return 0, flagged in results
       return 0;

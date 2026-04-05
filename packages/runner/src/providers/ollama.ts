@@ -17,14 +17,28 @@ export class OllamaProvider implements LLMProvider {
 
   async complete(prompt: string, config: ModelConfig): Promise<LLMResponse> {
     const baseUrl = config.baseUrl ?? DEFAULT_OLLAMA_URL;
-    const url = `${baseUrl.replace(/\/$/, '')}/api/generate`;
+    // For Ollama Cloud (baseUrl ends with /api), don't double up the path
+    const normalizedBase = baseUrl.replace(/\/$/, '');
+    const url = normalizedBase.endsWith('/api')
+      ? `${normalizedBase}/generate`
+      : `${normalizedBase}/api/generate`;
 
     const start = performance.now();
 
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Support Ollama Cloud API key auth
+      const apiKey = config.apiKey ?? process.env.OLLAMA_API;
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           model: config.model,
           prompt,

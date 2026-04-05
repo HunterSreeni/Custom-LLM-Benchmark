@@ -141,6 +141,117 @@
       border-color: #58a6ff;
       color: #58a6ff;
     }
+    /* Response Preview Styles */
+    .preview-filters {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .preview-filters select, .preview-filters button {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .preview-filters button.active {
+      background: #238636;
+      border-color: #238636;
+      color: #fff;
+    }
+    .response-card {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .response-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid #21262d;
+      user-select: none;
+    }
+    .response-header:hover { background: #161b22; }
+    .response-header .title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .diff-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+      text-transform: uppercase;
+    }
+    .diff-badge.easy { background: #238636; color: #fff; }
+    .diff-badge.medium { background: #d29922; color: #fff; }
+    .diff-badge.hard { background: #da3633; color: #fff; }
+    .diff-badge.difficult { background: #8b5cf6; color: #fff; }
+    .diff-badge.hidden { background: #8b949e; color: #fff; }
+    .score-tag {
+      font-family: monospace;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .score-tag.good { color: #7ee787; }
+    .score-tag.partial { color: #d29922; }
+    .score-tag.zero { color: #da3633; }
+    .response-body {
+      display: none;
+      padding: 14px;
+    }
+    .response-body.open { display: block; }
+    .response-section {
+      margin-bottom: 12px;
+    }
+    .response-section h4 {
+      font-size: 12px;
+      color: #58a6ff;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .findings-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .finding-tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      border: 1px solid #30363d;
+    }
+    .finding-tag.matched { background: #238636; border-color: #238636; color: #fff; }
+    .finding-tag.missed { background: #21262d; color: #8b949e; text-decoration: line-through; }
+    .response-text {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 12px;
+      line-height: 1.6;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: monospace;
+    }
+    .collapse-arrow {
+      color: #8b949e;
+      font-size: 12px;
+      transition: transform 0.2s;
+    }
+    .collapse-arrow.open { transform: rotate(90deg); }
   </style>
 </head>
 <body>
@@ -148,12 +259,15 @@
   <p class="subtitle">Custom LLM Benchmark - 13 categories, 119 challenges, 3,840 max points</p>
 
   <div id="drop-zone">
-    Drop result JSON files here, or use the file picker below
+    Drop result JSON files here (scores + responses), or use the file picker below<br>
+    <span style="font-size:12px">Supports: *-results.json (scores) and *-responses.json (response previews)</span>
   </div>
 
   <div class="controls">
-    <label>Load results:</label>
+    <label>Load files:</label>
     <input type="file" id="file-input" multiple accept=".json">
+    <label>Or folder:</label>
+    <input type="file" id="folder-input" webkitdirectory accept=".json">
     <button onclick="loadExample()">Load Example</button>
     <button class="secondary" onclick="clearAll()">Clear All</button>
   </div>
@@ -181,6 +295,22 @@
       <h2>Penalty Summary</h2>
       <div id="penalties-content" class="no-data">No results loaded</div>
     </div>
+
+    <div class="card full-width" id="preview-card">
+      <h2>Response Preview - Actual vs Expected</h2>
+      <div class="preview-filters" id="preview-filters">
+        <select id="preview-model-select">
+          <option value="">Select model...</option>
+        </select>
+        <button class="active" data-diff="all" onclick="filterDifficulty('all', this)">All</button>
+        <button data-diff="easy" onclick="filterDifficulty('easy', this)">Easy</button>
+        <button data-diff="medium" onclick="filterDifficulty('medium', this)">Medium</button>
+        <button data-diff="hard" onclick="filterDifficulty('hard', this)">Hard</button>
+        <button data-diff="difficult" onclick="filterDifficulty('difficult', this)">Difficult</button>
+        <button data-diff="hidden" onclick="filterDifficulty('hidden', this)">Hidden</button>
+      </div>
+      <div id="preview-content" class="no-data">Load response JSON files (*-responses.json) to see previews</div>
+    </div>
   </div>
 
   <script>
@@ -206,7 +336,9 @@
     };
 
     let loadedResults = [];
+    let loadedResponses = {}; // { modelId: responseArray }
     let radarChart = null;
+    let currentPreviewFilter = 'all';
 
     // Drag and drop
     const dropZone = document.getElementById('drop-zone');
@@ -224,6 +356,11 @@
     document.getElementById('file-input').addEventListener('change', (e) => {
       handleFiles(e.target.files);
     });
+    document.getElementById('folder-input').addEventListener('change', (e) => {
+      // Filter to only .json files from the folder
+      const jsonFiles = [...e.target.files].filter(f => f.name.endsWith('.json'));
+      handleFiles(jsonFiles);
+    });
 
     function handleFiles(files) {
       for (const file of files) {
@@ -232,9 +369,14 @@
           try {
             const data = JSON.parse(e.target.result);
             if (data.model && data.grandTotal) {
-              // Remove existing result for same model
+              // Result file
               loadedResults = loadedResults.filter(r => r.model !== data.model);
               loadedResults.push(data);
+              render();
+            } else if (Array.isArray(data) && data.length > 0 && 'rawResponse' in data[0]) {
+              // Response file - extract model name from filename (e.g. "glm-5-responses.json")
+              const modelId = file.name.replace('-responses.json', '');
+              loadedResponses[modelId] = data;
               render();
             }
           } catch (err) {
@@ -268,6 +410,7 @@
 
     function clearAll() {
       loadedResults = [];
+      loadedResponses = {};
       render();
     }
 
@@ -282,6 +425,7 @@
       renderRadar();
       renderCategories();
       renderPenalties();
+      renderPreview();
     }
 
     function renderRankings() {
@@ -437,6 +581,118 @@
       html += '</table>';
       el.className = '';
       el.innerHTML = html;
+    }
+
+    // --- Response Preview ---
+
+    function renderPreview() {
+      const select = document.getElementById('preview-model-select');
+      const el = document.getElementById('preview-content');
+      const modelIds = Object.keys(loadedResponses);
+
+      // Update model dropdown
+      const currentVal = select.value;
+      select.innerHTML = '<option value="">Select model...</option>';
+      modelIds.forEach(id => {
+        select.innerHTML += `<option value="${id}" ${id === currentVal ? 'selected' : ''}>${id}</option>`;
+      });
+
+      // Auto-select first model if none selected
+      if (!currentVal && modelIds.length > 0) {
+        select.value = modelIds[0];
+      }
+
+      select.onchange = () => renderPreview();
+
+      const selectedModel = select.value;
+      if (!selectedModel || !loadedResponses[selectedModel]) {
+        el.className = 'no-data';
+        el.textContent = modelIds.length === 0
+          ? 'Load response JSON files (*-responses.json) to see previews'
+          : 'Select a model above';
+        return;
+      }
+
+      const responses = loadedResponses[selectedModel];
+      const filtered = currentPreviewFilter === 'all'
+        ? responses
+        : responses.filter(r => r.difficulty === currentPreviewFilter);
+
+      if (filtered.length === 0) {
+        el.className = 'no-data';
+        el.textContent = 'No challenges match this filter';
+        return;
+      }
+
+      let html = '';
+      // Group by category
+      const grouped = {};
+      filtered.forEach(r => {
+        if (!grouped[r.categoryName]) grouped[r.categoryName] = [];
+        grouped[r.categoryName].push(r);
+      });
+
+      for (const [catName, challenges] of Object.entries(grouped)) {
+        html += `<div style="margin-bottom:8px;color:#8b949e;font-size:12px;font-weight:600;text-transform:uppercase;padding-top:8px;">${catName}</div>`;
+        challenges.forEach((ch, idx) => {
+          const scoreClass = ch.pct >= 60 ? 'good' : ch.pct > 0 ? 'partial' : 'zero';
+          const cardId = `resp-${selectedModel}-${ch.challengeId}`;
+          html += `
+            <div class="response-card">
+              <div class="response-header" onclick="toggleResponse('${cardId}')">
+                <div class="title-row">
+                  <span class="collapse-arrow" id="arrow-${cardId}">&#9654;</span>
+                  <span class="diff-badge ${ch.difficulty}">${ch.difficulty}</span>
+                  <span>${escapeHtml(ch.title)}</span>
+                </div>
+                <span class="score-tag ${scoreClass}">${ch.score}/${ch.maxScore} (${ch.pct}%)</span>
+              </div>
+              <div class="response-body" id="body-${cardId}">
+                <div class="response-section">
+                  <h4>Expected Findings</h4>
+                  <div class="findings-list">
+                    ${(ch.expectedFindings || []).map(f => {
+                      const isMatched = (ch.findingsMatched || []).includes(f.id);
+                      return `<span class="finding-tag ${isMatched ? 'matched' : 'missed'}" title="${escapeHtml(f.description)}">${escapeHtml(f.id)} ${isMatched ? '&#10003;' : '&#10007;'}</span>`;
+                    }).join('')}
+                  </div>
+                </div>
+                <div class="response-section">
+                  <h4>Model Response</h4>
+                  <div class="response-text">${escapeHtml(ch.rawResponse || '(no response captured)')}</div>
+                </div>
+              </div>
+            </div>`;
+        });
+      }
+
+      el.className = '';
+      el.innerHTML = html;
+    }
+
+    function toggleResponse(cardId) {
+      const body = document.getElementById('body-' + cardId);
+      const arrow = document.getElementById('arrow-' + cardId);
+      if (body.classList.contains('open')) {
+        body.classList.remove('open');
+        arrow.classList.remove('open');
+      } else {
+        body.classList.add('open');
+        arrow.classList.add('open');
+      }
+    }
+
+    function filterDifficulty(diff, btn) {
+      currentPreviewFilter = diff;
+      document.querySelectorAll('.preview-filters button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderPreview();
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
     }
   </script>
 </body>

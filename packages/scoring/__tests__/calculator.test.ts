@@ -90,8 +90,8 @@ describe('evaluateCriterion', () => {
   it('returns 0 when no match_terms provided for keyword', () => {
     const criterion = makeCriterion({ match_type: 'keyword', match_terms: undefined });
     const score = evaluateCriterion(criterion, 'any response');
-    // No terms = all terms match (vacuous truth)
-    expect(score).toBe(5);
+    // No terms = no evidence of match, return 0
+    expect(score).toBe(0);
   });
 });
 
