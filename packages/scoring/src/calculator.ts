@@ -139,13 +139,17 @@ export function scorePhase(
   const challenges: Record<string, ChallengeScore> = {};
   let phaseScore = 0;
   let phaseBonus = 0;
+  let phaseMax = 0;
+  let phaseBonusMax = 0;
 
   for (const cs of challengeScores) {
     challenges[cs.challengeId] = cs;
     if (isHidden(cs.difficulty)) {
       phaseBonus += cs.weightedScore;
+      phaseBonusMax += cs.maxWeighted;
     } else {
       phaseScore += cs.weightedScore;
+      phaseMax += cs.maxWeighted;
     }
   }
 
@@ -155,8 +159,8 @@ export function scorePhase(
     phaseScore,
     phaseBonus,
     phaseTotal: phaseScore + phaseBonus,
-    phaseMax: 110,
-    phaseBonusMax: 50,
+    phaseMax,
+    phaseBonusMax,
   };
 }
 
@@ -170,26 +174,22 @@ export function scoreCategory(
 ): CategoryScore {
   const phases: Record<string, PhaseScore> = {};
   let totalScore = 0;
+  let maxTotal = 0;
 
   for (const ps of phaseScores) {
     phases[ps.phaseId] = ps;
     totalScore += ps.phaseTotal;
+    maxTotal += ps.phaseMax + ps.phaseBonusMax;
   }
-
-  const maxBase = getCategoryMaxBase(categoryType);
-  const maxBonus = getCategoryMaxBonus(categoryType);
-  const maxTotal = maxBase + maxBonus;
-
-  const cappedScore = Math.min(totalScore, maxTotal);
 
   return {
     categoryId,
     categorySlug,
     categoryType,
     phases,
-    categoryScore: cappedScore,
+    categoryScore: totalScore,
     categoryMax: maxTotal,
-    categoryPct: maxTotal > 0 ? (cappedScore / maxTotal) * 100 : 0,
+    categoryPct: maxTotal > 0 ? (totalScore / maxTotal) * 100 : 0,
   };
 }
 

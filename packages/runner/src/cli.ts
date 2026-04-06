@@ -33,43 +33,43 @@ const MODEL_PRESETS: Record<string, Omit<ModelConfig, 'id'>> = {
   'claude-opus-4.6': {
     provider: 'openrouter',
     model: 'anthropic/claude-opus-4',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
   'claude-sonnet-4.6': {
     provider: 'openrouter',
     model: 'anthropic/claude-sonnet-4',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
   'claude-haiku-4.5': {
     provider: 'openrouter',
     model: 'anthropic/claude-haiku-4-5',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
   'gpt-4.1': {
     provider: 'openrouter',
     model: 'openai/gpt-4.1',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
   'gpt-4o': {
     provider: 'openrouter',
     model: 'openai/gpt-4o',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
   'gpt-4o-mini': {
     provider: 'openrouter',
     model: 'openai/gpt-4o-mini',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
   'grok-3': {
     provider: 'openrouter',
     model: 'x-ai/grok-3',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
 
@@ -77,19 +77,19 @@ const MODEL_PRESETS: Record<string, Omit<ModelConfig, 'id'>> = {
   'o3': {
     provider: 'openrouter',
     model: 'openai/o3',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
   'deepseek-r1': {
     provider: 'openrouter',
     model: 'deepseek/deepseek-r1',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
   'deepseek-v3': {
     provider: 'openrouter',
     model: 'deepseek/deepseek-chat-v3',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
 
@@ -97,19 +97,19 @@ const MODEL_PRESETS: Record<string, Omit<ModelConfig, 'id'>> = {
   'llama-4': {
     provider: 'openrouter',
     model: 'meta-llama/llama-4-maverick',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
   'mistral-large': {
     provider: 'openrouter',
     model: 'mistralai/mistral-large',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
   'qwen-2.5': {
     provider: 'openrouter',
     model: 'qwen/qwen-2.5-72b-instruct',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
 
@@ -117,25 +117,25 @@ const MODEL_PRESETS: Record<string, Omit<ModelConfig, 'id'>> = {
   'gemini-2.5-pro': {
     provider: 'openrouter',
     model: 'google/gemini-2.5-pro-preview-03-25',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
   'gemini-2.5-flash': {
     provider: 'openrouter',
     model: 'google/gemini-2.5-flash-preview:thinking',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
   'gemini-2.0-flash': {
     provider: 'google-ai',
     model: 'gemini-2.0-flash',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
   'gemini-flash-lite': {
     provider: 'google-ai',
     model: 'gemini-2.0-flash-lite',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
 
@@ -144,35 +144,35 @@ const MODEL_PRESETS: Record<string, Omit<ModelConfig, 'id'>> = {
     provider: 'ollama',
     model: 'glm-5',
     baseUrl: 'https://ollama.com/api',
-    maxTokens: 4096,
+    maxTokens: 16384,
     temperature: 0.6,
   },
   'kimi-k2.5': {
     provider: 'ollama',
     model: 'kimi-k2.5',
     baseUrl: 'https://ollama.com/api',
-    maxTokens: 4096,
+    maxTokens: 16384,
     temperature: 0.6,
   },
   'nemotron-3-super': {
     provider: 'ollama',
     model: 'nemotron-3-super',
     baseUrl: 'https://ollama.com/api',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
   'qwen3.5': {
     provider: 'ollama',
     model: 'qwen3.5',
     baseUrl: 'https://ollama.com/api',
-    maxTokens: 4096,
+    maxTokens: 16384,
     temperature: 0.7,
   },
   'minimax-m2.7': {
     provider: 'ollama',
     model: 'minimax-m2.7',
     baseUrl: 'https://ollama.com/api',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 1.0,
   },
 
@@ -180,25 +180,25 @@ const MODEL_PRESETS: Record<string, Omit<ModelConfig, 'id'>> = {
   'ollama-llama3': {
     provider: 'ollama',
     model: 'llama3',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
   'ollama-mistral': {
     provider: 'ollama',
     model: 'mistral',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
   'ollama-qwen2.5': {
     provider: 'ollama',
     model: 'qwen2.5',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
   'ollama-deepseek-r1': {
     provider: 'ollama',
     model: 'deepseek-r1',
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   },
 };
@@ -218,7 +218,7 @@ function resolveModelConfig(modelId: string): ModelConfig {
       id: modelId,
       provider: 'ollama',
       model: modelId,
-      maxTokens: 4096,
+      maxTokens: 8192,
       temperature: 0,
     };
   }
@@ -231,7 +231,7 @@ function resolveModelConfig(modelId: string): ModelConfig {
     id: modelId,
     provider: 'openrouter',
     model: modelId,
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0,
   };
 }
@@ -504,6 +504,18 @@ program
               // Log errors or empty responses
               if (llmResponse.content.startsWith('[ERROR]') || llmResponse.outputTokens === 0) {
                 console.log(`        >> Response issue: ${llmResponse.content.slice(0, 150)}`);
+              }
+
+              // Silent failure: hit token cap but produced no visible content (thinking models burning budget on reasoning)
+              if (
+                llmResponse.content.trim() === '' &&
+                llmResponse.outputTokens >= (modelConfig.maxTokens ?? 0) &&
+                modelConfig.maxTokens
+              ) {
+                console.log(
+                  `        >> WARN: silent failure - hit maxTokens cap (${modelConfig.maxTokens}) with empty output. ` +
+                    `Likely thinking model burned budget on reasoning. Consider raising maxTokens for ${modelConfig.id}.`,
+                );
               }
             } catch (err) {
               console.log(`ERROR: ${(err as Error).message}`);
